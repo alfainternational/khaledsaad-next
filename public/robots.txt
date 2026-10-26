@@ -1,2 +1,9 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /search
+
+Sitemap: https://next.khaledsaad.net/sitemap.xml

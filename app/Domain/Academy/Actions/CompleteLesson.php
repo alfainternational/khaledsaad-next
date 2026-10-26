@@ -1,0 +1,18 @@
+<?php
+
+namespace App\Domain\Academy\Actions;
+
+use App\Domain\Academy\Models\Lesson;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+
+class CompleteLesson
+{
+    public function handle(User $user, Lesson $lesson, array $deliverable = []): void
+    {
+        DB::table('activity_completions')->updateOrInsert(
+            ['user_id' => $user->id, 'lesson_id' => $lesson->id],
+            ['completed_at' => now(), 'deliverable' => json_encode($deliverable, JSON_UNESCAPED_UNICODE)]
+        );
+    }
+}

@@ -1,0 +1,2 @@
+{!! '<'.'?xml version="1.0" encoding="UTF-8"?'.'>' !!}
+<rss version="2.0"><channel><title>أثر — أحدث المحتوى</title><link>{{ route('home') }}</link><description>معرفة تسويقية تتحول إلى أثر.</description><language>ar</language>@foreach($articles as $article)<item><title><![CDATA[{{ $article->title }}]]></title><link>{{ route('articles.show',$article) }}</link><guid>{{ route('articles.show',$article) }}</guid><pubDate>{{ $article->published_at->toRssString() }}</pubDate><description><![CDATA[{{ $article->excerpt }}]]></description></item>@endforeach</channel></rss>

@@ -1,0 +1,3 @@
+@extends('layouts.platform')
+@section('title','القوالب والموارد — أثر')
+@section('content')<section class="page-hero"><div class="shell"><span class="kicker">الموارد</span><h1>قوالب تختصر البداية، لا التفكير</h1><p>قوالب موجز الحملة، خريطة العميل، ولوحة القياس الأسبوعية—مصممة لتعمل مع الدروس والأدوات.</p></div></section><section class="section"><div class="shell cards three">@foreach(['موجز حملة من صفحة واحدة','خريطة رحلة العميل','لوحة القياس الأسبوعية'] as $resource)<article class="content-card"><span class="tag">قالب مجاني</span><h2>{{ $resource }}</h2><p>نسخة عملية قابلة للتخصيص والحفظ داخل مشروعك.</p><a class="text-link" href="{{ route('register') }}">احصل على القالب ←</a></article>@endforeach</div></section>@endsection
