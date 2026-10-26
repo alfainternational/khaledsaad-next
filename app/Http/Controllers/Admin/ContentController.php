@@ -22,13 +22,13 @@ class ContentController extends Controller
     public function publish(Request $request, ContentItem $contentItem, PublishContent $publisher): RedirectResponse
     {
         $this->authorizeAdmin($request);
-        $publisher->handle($contentItem);
+        $publisher->handle($contentItem, $request->user()->id);
 
         return back()->with('status', 'تم نشر المادة وحفظ نسخة منها.');
     }
 
     private function authorizeAdmin(Request $request): void
     {
-        abort_unless($request->user()?->platform_role === 'admin', 403);
+        abort_unless(in_array($request->user()?->platform_role, ['editor', 'admin', 'super_admin'], true), 403);
     }
 }

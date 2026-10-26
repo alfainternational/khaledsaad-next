@@ -7,13 +7,13 @@ use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Services\AiGateway;
 use App\Domain\Lab\Services\CampaignBriefBuilder;
 use App\Domain\Workspace\Models\Project;
-use App\Domain\Workspace\Models\Workspace;
 use App\Http\Controllers\Controller;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class ToolRunController extends Controller
 {
@@ -26,24 +26,30 @@ class ToolRunController extends Controller
             'audience' => ['required', 'string', 'max:1000'],
             'offer' => ['required', 'string', 'max:1000'],
         ]);
-        $workspace = Workspace::query()->findOrFail($data['workspace_id']);
-        abort_unless($request->user()->workspaces()->whereKey($workspace->id)->exists(), 403);
+        abort_unless($tool->is_published, 404);
+        $workspace = $this->memberWorkspace($request, $data['workspace_id']);
+        abort_unless(in_array($workspace->pivot->role, ['owner', 'editor'], true), 403);
         $project = Project::query()->where('workspace_id', $workspace->id)->findOrFail($data['project_id']);
-        if ($tool->credit_cost > 0 && $ledger->balance($workspace) < $tool->credit_cost) {
-            return back()->withErrors(['tool' => 'الرصيد غير كافٍ لتشغيل هذه الأداة.'])->withInput();
-        }
+        $toolVersion = $tool->versions()->where('is_active', true)->latest('version')->first();
 
         $publicId = (string) Str::uuid();
-        $runId = DB::table('tool_runs')->insertGetId([
-            'workspace_id' => $workspace->id, 'project_id' => $project->id, 'tool_id' => $tool->id,
-            'user_id' => $request->user()->id, 'public_id' => $publicId, 'status' => 'running',
-            'input_payload' => json_encode($data, JSON_UNESCAPED_UNICODE),
-            'output_payload' => null, 'reserved_credits' => $tool->credit_cost, 'used_credits' => 0,
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
+        try {
+            $runId = DB::transaction(function () use ($workspace, $project, $tool, $toolVersion, $request, $data, $publicId, $ledger): int {
+                if ($tool->credit_cost > 0) {
+                    $ledger->reserve($workspace, "run:{$publicId}:reserve", $tool->credit_cost, 'حجز تشغيل '.$tool->name);
+                }
 
-        if ($tool->credit_cost > 0) {
-            $ledger->record($workspace, "run:{$publicId}:reserve", 'reserve', -$tool->credit_cost, 'حجز تشغيل '.$tool->name, ['run_id' => $runId]);
+                return DB::table('tool_runs')->insertGetId([
+                    'workspace_id' => $workspace->id, 'project_id' => $project->id, 'tool_id' => $tool->id,
+                    'tool_version_id' => $toolVersion?->id,
+                    'user_id' => $request->user()->id, 'public_id' => $publicId, 'status' => 'running',
+                    'input_payload' => json_encode($data, JSON_UNESCAPED_UNICODE),
+                    'output_payload' => null, 'reserved_credits' => $tool->credit_cost, 'used_credits' => 0,
+                    'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }, 3);
+        } catch (DomainException $exception) {
+            return back()->withErrors(['tool' => $exception->getMessage()])->withInput();
         }
 
         try {
@@ -59,15 +65,27 @@ class ToolRunController extends Controller
                 'status' => 'completed', 'output_payload' => json_encode($output, JSON_UNESCAPED_UNICODE),
                 'reserved_credits' => 0, 'used_credits' => $tool->credit_cost, 'updated_at' => now(),
             ]);
-        } catch (DomainException $exception) {
-            if ($tool->credit_cost > 0) {
-                $ledger->record($workspace, "run:{$publicId}:release", 'release', $tool->credit_cost, 'فك حجز تشغيل فاشل');
-            }
-            DB::table('tool_runs')->where('id', $runId)->update([
-                'status' => 'failed', 'reserved_credits' => 0, 'error_code' => 'provider_unavailable', 'updated_at' => now(),
+            DB::table('tool_outputs')->insert([
+                'tool_run_id' => $runId, 'version' => 1,
+                'payload' => json_encode($output, JSON_UNESCAPED_UNICODE),
+                'created_at' => now(), 'updated_at' => now(),
             ]);
+        } catch (Throwable $exception) {
+            DB::transaction(function () use ($tool, $ledger, $workspace, $publicId, $runId): void {
+                if ($tool->credit_cost > 0) {
+                    $ledger->record($workspace, "run:{$publicId}:release", 'release', $tool->credit_cost, 'فك حجز تشغيل فاشل');
+                }
+                DB::table('tool_runs')->where('id', $runId)->update([
+                    'status' => 'failed', 'reserved_credits' => 0, 'error_code' => 'provider_unavailable', 'updated_at' => now(),
+                ]);
+            });
+            report($exception);
 
-            return back()->withErrors(['tool' => $exception->getMessage()])->withInput();
+            $message = $exception instanceof DomainException
+                ? $exception->getMessage()
+                : 'تعذر إكمال التشغيل. تم استرجاع الرصيد المحجوز ويمكن إعادة المحاولة.';
+
+            return back()->withErrors(['tool' => $message])->withInput();
         }
 
         return back()->with('tool_output', $output);

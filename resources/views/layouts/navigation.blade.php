@@ -15,6 +15,9 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         مساحة العمل
                     </x-nav-link>
+                    <x-nav-link :href="route('app.billing')" :active="request()->routeIs('app.billing')">
+                        الاشتراك والأرصدة
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -69,6 +72,9 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 مساحة العمل
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('app.billing')" :active="request()->routeIs('app.billing')">
+                الاشتراك والأرصدة
             </x-responsive-nav-link>
         </div>
 

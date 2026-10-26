@@ -18,4 +18,9 @@ class Course extends Model
     {
         return $this->hasMany(Lesson::class)->orderBy('position');
     }
+
+    public function modules(): HasMany
+    {
+        return $this->hasMany(CourseModule::class)->orderBy('position');
+    }
 }

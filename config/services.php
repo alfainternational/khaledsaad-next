@@ -10,6 +10,14 @@ return [
 
     'payments' => [
         'webhook_secret' => env('PAYMENT_WEBHOOK_SECRET'),
+        'plans' => [
+            'pro' => [
+                'price_id' => env('PAYMENT_PRO_PRICE_ID'),
+                'amount' => (int) env('PAYMENT_PRO_AMOUNT', 0),
+                'currency' => env('PAYMENT_PRO_CURRENCY', 'SAR'),
+                'credits' => (int) env('PAYMENT_PRO_CREDITS', 0),
+            ],
+        ],
     ],
 
     /*

@@ -8,4 +8,5 @@ return [
     'primary_host' => env('PLATFORM_PRIMARY_HOST', 'khaledsaad.net'),
     'locale' => env('PLATFORM_LOCALE', 'ar'),
     'support_email' => env('PLATFORM_SUPPORT_EMAIL', 'hello@khaledsaad.net'),
+    'backup_marker' => env('PLATFORM_BACKUP_MARKER'),
 ];

@@ -6,6 +6,7 @@ use App\Domain\Academy\Models\Course;
 use App\Domain\Content\Models\ContentItem;
 use App\Domain\Lab\Models\Tool;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PublicSiteController extends Controller
 {
@@ -33,7 +34,25 @@ class PublicSiteController extends Controller
         abort_unless($contentItem->status === 'published' && $contentItem->published_at?->lte(now()), 404);
         $contentItem->load('sources');
 
-        return view('site.articles.show', ['article' => $contentItem]);
+        $structuredData = [
+            '@context' => 'https://schema.org',
+            '@type' => $contentItem->type === 'news' ? 'NewsArticle' : 'Article',
+            'headline' => $contentItem->title,
+            'description' => $contentItem->excerpt,
+            'datePublished' => $contentItem->published_at?->toIso8601String(),
+            'dateModified' => $contentItem->updated_at?->toIso8601String(),
+            'author' => ['@type' => 'Person', 'name' => $contentItem->author_name],
+            'publisher' => ['@type' => 'Organization', 'name' => 'أثر', 'url' => url('/')],
+            'mainEntityOfPage' => route('articles.show', $contentItem),
+        ];
+
+        return view('site.articles.show', [
+            'article' => $contentItem,
+            'structuredJson' => json_encode(
+                $structuredData,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
+            ),
+        ]);
     }
 
     public function insights()
@@ -59,6 +78,13 @@ class PublicSiteController extends Controller
     public function tools()
     {
         return view('site.tools.index', ['tools' => Tool::query()->where('is_published', true)->get()]);
+    }
+
+    public function resources()
+    {
+        return view('site.resources', [
+            'resources' => DB::table('resource_templates')->where('is_published', true)->get(),
+        ]);
     }
 
     public function tool(Tool $tool)

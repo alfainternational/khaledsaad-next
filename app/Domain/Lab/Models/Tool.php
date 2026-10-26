@@ -3,6 +3,7 @@
 namespace App\Domain\Lab\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tool extends Model
 {
@@ -16,5 +17,10 @@ class Tool extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(ToolVersion::class);
     }
 }

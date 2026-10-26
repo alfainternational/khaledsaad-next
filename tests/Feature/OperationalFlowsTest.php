@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Domain\Commerce\Services\CreditLedger;
 use App\Domain\Content\Models\ContentItem;
 use App\Domain\Lab\Models\Tool;
+use App\Domain\Lab\Services\AiGateway;
 use App\Domain\Workspace\Models\Workspace;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -68,6 +70,73 @@ class OperationalFlowsTest extends TestCase
         $this->assertDatabaseHas('tool_runs', ['tool_id' => $tool->id, 'status' => 'completed', 'used_credits' => 2]);
     }
 
+    public function test_unexpected_ai_failure_releases_reserved_credit_and_marks_run_failed(): void
+    {
+        $this->seed();
+        $user = User::factory()->create();
+        $workspace = Workspace::query()->create(['name' => 'مساحة فشل', 'slug' => 'failed-ai-space']);
+        $workspace->members()->attach($user, ['role' => 'owner']);
+        $project = $workspace->projects()->create(['name' => 'اختبار فشل', 'slug' => 'failure']);
+        app(CreditLedger::class)->record($workspace, 'grant:failure', 'grant', 10, 'اختبار');
+        $tool = Tool::query()->where('slug', 'content-angle-generator')->firstOrFail();
+        app()->instance(AiGateway::class, new class extends AiGateway
+        {
+            public function generate(string $input, ?string $instructions = null): array
+            {
+                throw new \RuntimeException('network down');
+            }
+        });
+
+        $this->actingAs($user)->post(route('app.tools.run', $tool), [
+            'workspace_id' => $workspace->id, 'project_id' => $project->id,
+            'goal' => 'زيادة الوعي', 'audience' => 'أصحاب المتاجر', 'offer' => 'دليل مجاني',
+        ])->assertRedirect()->assertSessionHasErrors('tool');
+
+        $this->assertSame(10, app(CreditLedger::class)->balance($workspace));
+        $this->assertDatabaseHas('tool_runs', ['tool_id' => $tool->id, 'status' => 'failed', 'reserved_credits' => 0]);
+    }
+
+    public function test_recovery_command_releases_stale_tool_reservations_idempotently(): void
+    {
+        $this->seed();
+        $user = User::factory()->create();
+        $workspace = Workspace::query()->create(['name' => 'مساحة معلقة', 'slug' => 'stale-space']);
+        $workspace->members()->attach($user, ['role' => 'owner']);
+        $project = $workspace->projects()->create(['name' => 'معلق', 'slug' => 'stale']);
+        $tool = Tool::query()->where('kind', 'ai')->firstOrFail();
+        app(CreditLedger::class)->record($workspace, 'grant:stale', 'grant', 10, 'اختبار');
+        app(CreditLedger::class)->record($workspace, 'run:stale-run:reserve', 'reserve', -2, 'حجز');
+        DB::table('tool_runs')->insert([
+            'workspace_id' => $workspace->id, 'project_id' => $project->id, 'tool_id' => $tool->id,
+            'user_id' => $user->id, 'public_id' => 'stale-run', 'status' => 'running',
+            'input_payload' => '{}', 'reserved_credits' => 2, 'used_credits' => 0,
+            'created_at' => now()->subHour(), 'updated_at' => now()->subHour(),
+        ]);
+
+        $this->artisan('platform:recover-runs')->assertSuccessful();
+        $this->artisan('platform:recover-runs')->assertSuccessful();
+
+        $this->assertSame(10, app(CreditLedger::class)->balance($workspace));
+        $this->assertDatabaseHas('tool_runs', ['public_id' => 'stale-run', 'status' => 'failed', 'reserved_credits' => 0]);
+    }
+
+    public function test_viewer_and_unpublished_tool_cannot_spend_workspace_credit(): void
+    {
+        $this->seed();
+        $viewer = User::factory()->create();
+        $workspace = Workspace::query()->create(['name' => 'مساحة مقروءة', 'slug' => 'viewer-space']);
+        $workspace->members()->attach($viewer, ['role' => 'viewer']);
+        $project = $workspace->projects()->create(['name' => 'خاص', 'slug' => 'private']);
+        $tool = Tool::query()->where('kind', 'ai')->firstOrFail();
+
+        $payload = ['workspace_id' => $workspace->id, 'project_id' => $project->id, 'goal' => 'هدف', 'audience' => 'جمهور', 'offer' => 'عرض'];
+        $this->actingAs($viewer)->post(route('app.tools.run', $tool), $payload)->assertForbidden();
+
+        $workspace->members()->updateExistingPivot($viewer->id, ['role' => 'editor']);
+        $tool->update(['is_published' => false]);
+        $this->actingAs($viewer)->post(route('app.tools.run', $tool), $payload)->assertNotFound();
+    }
+
     public function test_non_admin_cannot_open_operations_console(): void
     {
         $user = User::factory()->create();
@@ -98,7 +167,9 @@ class OperationalFlowsTest extends TestCase
     {
         config()->set('services.payments.webhook_secret', 'secret');
         $workspace = Workspace::query()->create(['name' => 'مدفوع', 'slug' => 'paid']);
-        $payload = ['event_id' => 'evt_100', 'type' => 'payment.succeeded', 'workspace_id' => $workspace->id, 'plan' => 'pro', 'credits' => 100];
+        $planId = DB::table('plans')->insertGetId(['slug' => 'pro', 'name' => 'احترافية', 'provider_price_id' => 'price_pro', 'price' => 4900, 'currency' => 'SAR', 'credits' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('orders')->insert(['public_id' => 'order-100', 'workspace_id' => $workspace->id, 'plan_id' => $planId, 'amount' => 4900, 'currency' => 'SAR', 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+        $payload = ['event_id' => 'evt_100', 'type' => 'payment.succeeded', 'workspace_id' => $workspace->id, 'order_id' => 'order-100', 'payment_id' => 'pay_100', 'price_id' => 'price_pro', 'amount' => 4900, 'currency' => 'SAR'];
         $body = json_encode($payload);
         $server = ['HTTP_X_PLATFORM_SIGNATURE' => hash_hmac('sha256', $body, 'secret'), 'CONTENT_TYPE' => 'application/json'];
 
@@ -107,6 +178,23 @@ class OperationalFlowsTest extends TestCase
 
         $this->assertDatabaseCount('webhook_events', 1);
         $this->assertDatabaseHas('subscriptions', ['workspace_id' => $workspace->id, 'plan' => 'pro', 'status' => 'active']);
+        $this->assertDatabaseHas('payments', ['provider_payment_id' => 'pay_100', 'amount' => 4900, 'status' => 'succeeded']);
         $this->assertSame(100, app(CreditLedger::class)->balance($workspace));
+    }
+
+    public function test_payment_webhook_rejects_unknown_price_or_amount(): void
+    {
+        config()->set('services.payments.webhook_secret', 'secret');
+        $workspace = Workspace::query()->create(['name' => 'مدفوع', 'slug' => 'rejected-payment']);
+        $planId = DB::table('plans')->insertGetId(['slug' => 'pro', 'name' => 'احترافية', 'provider_price_id' => 'price_pro', 'price' => 4900, 'currency' => 'SAR', 'credits' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('orders')->insert(['public_id' => 'order-bad', 'workspace_id' => $workspace->id, 'plan_id' => $planId, 'amount' => 4900, 'currency' => 'SAR', 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+        $payload = ['event_id' => 'evt_bad', 'type' => 'payment.succeeded', 'workspace_id' => $workspace->id, 'order_id' => 'order-bad', 'payment_id' => 'pay_bad', 'price_id' => 'price_pro', 'amount' => 1, 'currency' => 'SAR'];
+        $body = json_encode($payload);
+
+        $this->call('POST', '/webhooks/payments', [], [], [], [
+            'HTTP_X_PLATFORM_SIGNATURE' => hash_hmac('sha256', $body, 'secret'), 'CONTENT_TYPE' => 'application/json',
+        ], $body)->assertUnprocessable();
+
+        $this->assertSame(0, app(CreditLedger::class)->balance($workspace));
     }
 }

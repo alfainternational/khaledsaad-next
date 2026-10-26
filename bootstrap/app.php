@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\RedirectLegacyUrls;
+use App\Http\Middleware\RequestContext;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -12,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(RequestContext::class);
+        $middleware->append(RedirectLegacyUrls::class);
         $middleware->web(append: [SecurityHeaders::class]);
         $middleware->validateCsrfTokens(except: ['webhooks/payments']);
     })

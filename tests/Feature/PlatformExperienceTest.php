@@ -7,6 +7,7 @@ use App\Domain\Workspace\Models\Project;
 use App\Domain\Workspace\Models\Workspace;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PlatformExperienceTest extends TestCase
@@ -25,7 +26,9 @@ class PlatformExperienceTest extends TestCase
             ->assertSee('للمسوّقين والوكالات')
             ->assertSee('الأكاديمية')
             ->assertSee('مختبر التسويق')
-            ->assertHeader('X-Content-Type-Options', 'nosniff');
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Content-Security-Policy')
+            ->assertHeader('X-Request-Id');
     }
 
     public function test_only_published_content_is_public_with_sources_and_schema(): void
@@ -49,6 +52,29 @@ class PlatformExperienceTest extends TestCase
             ->assertSee('<link rel="canonical"', false);
 
         $this->get(route('articles.show', $draft))->assertNotFound();
+    }
+
+    public function test_article_json_ld_escapes_script_terminators(): void
+    {
+        $article = ContentItem::query()->create([
+            'type' => 'article', 'status' => 'published', 'title' => '</script><script>alert(1)</script>',
+            'slug' => 'safe-json-ld', 'excerpt' => 'ملخص', 'body' => 'محتوى', 'author_name' => 'فريق أثر', 'published_at' => now(),
+        ]);
+
+        $this->get(route('articles.show', $article))
+            ->assertOk()
+            ->assertDontSee('</script><script>', false)
+            ->assertSee('\\u003C/script\\u003E', false);
+    }
+
+    public function test_configured_legacy_url_redirects_permanently(): void
+    {
+        DB::table('redirects')->insert([
+            'from_path' => '/old-guide', 'to_path' => '/articles', 'status_code' => 301, 'is_active' => true,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->get('/old-guide')->assertRedirect('/articles')->assertStatus(301);
     }
 
     public function test_search_course_tool_and_discovery_endpoints_are_available(): void
