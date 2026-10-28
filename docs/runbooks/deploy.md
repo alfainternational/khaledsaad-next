@@ -25,3 +25,23 @@
 ## الرجوع
 
 أعد symlink إلى الإصدار السابق، أعد تشغيل workers وPHP-FPM، ثم نفّذ rollback لقاعدة البيانات فقط إذا كانت migration غير متوافقة وكان rollback مجرباً على نسخة مستعادة. لا تستخدم `migrate:rollback` عشوائياً على بيانات الإنتاج.
+
+## النشر الفعلي على الاستضافة الحالية (cPanel، 2026-10-28)
+
+ما نُفّذ من cPanel:
+- الدومين الفرعي `next.khaledsaad.net` بجذر `/home/kcepljda/repositories/khaledsaad-next/public`، وDNS يستجيب.
+- قاعدة `kcepljda_next` مع منح المستخدم الحالي `kcepljda_new` كل الصلاحيات (بيانات الاتصال نفسها المستخدمة في الموقع القديم).
+- PHP 8.3 (alt-php83) للدومين الفرعي.
+- cron للمجدول كل دقيقة: `cd /home/kcepljda/repositories/khaledsaad-next && /opt/alt/php83/usr/bin/php artisan schedule:run`.
+- المستودع على GitHub: `alfainternational/khaledsaad-next` (الفرع `codex/independent-platform`).
+
+ما يُنفَّذ يدوياً من cPanel عند كل إصدار:
+1. **Git™ Version Control → Create**: Clone URL `https://github.com/alfainternational/khaledsaad-next.git`، المسار `repositories/khaledsaad-next`. (مرة واحدة)
+2. **File Manager**: رفع ملف `khaledsaad-next.env` (نسخة الإنتاج من `.env`، غير مُتتبّع في git) إلى `/home/kcepljda/`. (مرة واحدة؛ تُنسخ إلى `.env` تلقائياً عند أول نشر)
+3. **Git™ Version Control → Manage → Pull or Deploy → Deploy HEAD Commit**: يشغّل مهام `.cpanel.yml` (composer install، migrate، seed أول مرة، optimize).
+4. للتحديثات اللاحقة: **Update from Remote** ثم **Deploy HEAD Commit**.
+
+ملاحظات:
+- المستودع يجب أن يكون متاحاً للقراءة لحظة الاستنساخ والتحديث؛ البديل الدائم: مفتاح SSH من cPanel → SSH Access يُضاف كـ Deploy Key في GitHub.
+- بلا Redis: الجلسات والكاش والطوابير على قاعدة البيانات، والطابور يُفرَّغ من المجدول كل دقيقة (`queue:work --stop-when-empty`).
+- فحص الجاهزية بعد النشر: `php artisan platform:doctor --env=production` من Terminal.
