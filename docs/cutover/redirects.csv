@@ -1,6 +1,5 @@
 from_path,to_path,status_code
 /blog,/articles,301
-/blog/1,/articles,301
 /knowledge,/articles,301
 /sectors,/academy,301
 /sectors/education,/academy,301
