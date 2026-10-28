@@ -1,0 +1,15 @@
+---
+# cPanel Git Version Control deployment tasks (run by "Deploy HEAD Commit").
+# The repository directory is the application root; the subdomain docroot is ./public.
+# PHP/Composer paths are the CloudLinux alt-php 8.3 CLI and cPanel's bundled Composer.
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/kcepljda/khaledsaad-next
+    - export PHP=/opt/alt/php83/usr/bin/php
+    - export COMPOSER=/opt/cpanel/composer/bin/composer
+    - cd $DEPLOYPATH && $PHP $COMPOSER install --no-dev --optimize-autoloader --no-interaction --no-progress
+    - cd $DEPLOYPATH && $PHP artisan migrate --force --no-interaction
+    - cd $DEPLOYPATH && ( [ -f storage/app/.seeded ] || ( $PHP artisan db:seed --force --no-interaction && touch storage/app/.seeded ) )
+    - cd $DEPLOYPATH && ( $PHP artisan storage:link || true )
+    - cd $DEPLOYPATH && $PHP artisan optimize:clear && $PHP artisan optimize
+    - cd $DEPLOYPATH && chmod -R u+rwX storage bootstrap/cache
