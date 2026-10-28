@@ -46,6 +46,8 @@ if [ ! -f .env ]; then
         exit 1
     fi
 fi
+# Legacy database for the pre-cutover content import (same credentials as DB_* unless overridden).
+grep -q '^LEGACY_DB_DATABASE=' .env || printf '\nLEGACY_DB_DATABASE=kcepljda_my\n' >> .env
 
 echo "==> Installing Composer dependencies"
 if [ -n "$COMPOSER" ] && [ -f "$COMPOSER" ]; then

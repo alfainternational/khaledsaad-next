@@ -16,9 +16,12 @@ class RedirectLegacyUrls
             return $next($request);
         }
 
+        // Legacy slugs are Arabic; stored decoded, so decode the incoming path before matching.
+        $path = '/'.ltrim(rawurldecode($request->path()), '/');
+
         try {
             $redirect = DB::table('redirects')
-                ->where('from_path', '/'.ltrim($request->path(), '/'))
+                ->where('from_path', $path)
                 ->where('is_active', true)
                 ->first();
         } catch (QueryException) {
@@ -41,7 +44,7 @@ class RedirectLegacyUrls
             && parse_url($target, PHP_URL_HOST) === null,
             500
         );
-        abort_if($target === '/'.ltrim($request->path(), '/'), 500);
+        abort_if($target === $path, 500);
 
         return redirect($target, in_array((int) $redirect->status_code, [301, 302, 307, 308], true) ? (int) $redirect->status_code : 301);
     }
