@@ -4,7 +4,7 @@
 # PHP/Composer paths are the CloudLinux alt-php 8.3 CLI and cPanel's bundled Composer.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/kcepljda/khaledsaad-next
+    - export DEPLOYPATH=/home/kcepljda/repositories/khaledsaad-next
     - export PHP=/opt/alt/php83/usr/bin/php
     - export COMPOSER=/opt/cpanel/composer/bin/composer
     - cd $DEPLOYPATH && $PHP $COMPOSER install --no-dev --optimize-autoloader --no-interaction --no-progress
