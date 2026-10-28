@@ -39,6 +39,8 @@ if [ ! -f .env ]; then
         echo "==> Installing .env from $ENV_SOURCE"
         cp "$ENV_SOURCE" .env
         chmod 600 .env
+        # Always mint the application key on the server itself (a key pasted from elsewhere failed once).
+        "$PHP" artisan key:generate --force --no-interaction
     else
         echo "!! Missing $ENV_SOURCE and no .env in place. Upload khaledsaad-next.env to \$HOME first." >&2
         exit 1
