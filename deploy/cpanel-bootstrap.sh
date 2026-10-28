@@ -69,6 +69,9 @@ echo "==> Caching"
 "$PHP" artisan optimize:clear >/dev/null
 "$PHP" artisan optimize
 chmod -R u+rwX storage bootstrap/cache
+# LiteSpeed must be able to traverse into the docroot.
+chmod 711 "$HOME" "$HOME/repositories" "$APP_DIR"
+chmod 755 "$APP_DIR/public"
 
 echo "==> Readiness"
 "$PHP" artisan platform:doctor --env=production || true
