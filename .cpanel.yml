@@ -7,6 +7,7 @@ deployment:
     - export DEPLOYPATH=/home/kcepljda/repositories/khaledsaad-next
     - export PHP=/opt/alt/php83/usr/bin/php
     - export COMPOSER=/opt/cpanel/composer/bin/composer
+    - cd $DEPLOYPATH && ( [ -f .env ] || cp /home/kcepljda/khaledsaad-next.env .env )
     - cd $DEPLOYPATH && $PHP $COMPOSER install --no-dev --optimize-autoloader --no-interaction --no-progress
     - cd $DEPLOYPATH && $PHP artisan migrate --force --no-interaction
     - cd $DEPLOYPATH && ( [ -f storage/app/.seeded ] || ( $PHP artisan db:seed --force --no-interaction && touch storage/app/.seeded ) )
