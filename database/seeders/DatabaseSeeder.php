@@ -19,9 +19,9 @@ class DatabaseSeeder extends Seeder
     {
         DB::table('plans')->insertOrIgnore([
             'slug' => 'pro', 'name' => 'الخطة الاحترافية',
-            'provider_price_id' => config('services.payments.plans.pro.price_id') ?: null,
-            'price' => (int) config('services.payments.plans.pro.amount') ?: 4900,
-            'currency' => config('services.payments.plans.pro.currency') ?: 'SAR',
+            'provider_price_id' => null,
+            'price' => (int) config('services.payments.plans.pro.amount') ?: 1300,
+            'currency' => config('services.payments.plans.pro.currency') ?: 'USD',
             'credits' => (int) config('services.payments.plans.pro.credits') ?: 100,
             'entitlements' => json_encode(['ai_tools' => true, 'projects' => 'unlimited']),
             'is_active' => true, 'created_at' => now(), 'updated_at' => now(),

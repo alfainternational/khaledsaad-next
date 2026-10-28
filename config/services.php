@@ -8,14 +8,21 @@ return [
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
     ],
 
+    // PayPal REST (Orders v2 + webhooks). PayPal does not settle SAR, so plan prices are in USD.
+    'paypal' => [
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'secret' => env('PAYPAL_SECRET'),
+        'mode' => env('PAYPAL_MODE', 'sandbox'), // sandbox | live
+        'webhook_id' => env('PAYPAL_WEBHOOK_ID'),
+        'base_url' => env('PAYPAL_BASE_URL'), // optional override; derived from mode when empty
+    ],
+
     'payments' => [
-        'webhook_secret' => env('PAYMENT_WEBHOOK_SECRET'),
         'plans' => [
             'pro' => [
-                'price_id' => env('PAYMENT_PRO_PRICE_ID'),
-                'amount' => (int) env('PAYMENT_PRO_AMOUNT', 0),
-                'currency' => env('PAYMENT_PRO_CURRENCY', 'SAR'),
-                'credits' => (int) env('PAYMENT_PRO_CREDITS', 0),
+                'amount' => (int) env('PAYMENT_PRO_AMOUNT', 1300), // minor units: 1300 = 13.00
+                'currency' => env('PAYMENT_PRO_CURRENCY', 'USD'),
+                'credits' => (int) env('PAYMENT_PRO_CREDITS', 100),
             ],
         ],
     ],

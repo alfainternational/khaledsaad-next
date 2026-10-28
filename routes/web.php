@@ -10,7 +10,7 @@ use App\Http\Controllers\App\ToolRunController;
 use App\Http\Controllers\App\ToolRunOutputController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicSiteController;
-use App\Http\Controllers\Webhooks\PaymentWebhookController;
+use App\Http\Controllers\Webhooks\PayPalWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicSiteController::class, 'home'])->name('home');
@@ -27,7 +27,7 @@ Route::get('/search', [PublicSiteController::class, 'search'])->middleware('thro
 Route::get('/sitemap.xml', [PublicSiteController::class, 'sitemap'])->name('sitemap');
 Route::get('/feed.xml', [PublicSiteController::class, 'feed'])->name('feed');
 Route::get('/llms.txt', fn () => response()->view('site.llms')->header('Content-Type', 'text/plain; charset=utf-8'))->name('llms');
-Route::post('/webhooks/payments', PaymentWebhookController::class)->middleware('throttle:webhooks')->name('webhooks.payments');
+Route::post('/webhooks/paypal', PayPalWebhookController::class)->middleware('throttle:webhooks')->name('webhooks.paypal');
 
 Route::get('/dashboard', function () {
     return view('dashboard', ['workspaces' => auth()->user()->workspaces()->with('projects')->get()]);
@@ -43,7 +43,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/app/projects/{project}', [ProjectController::class, 'destroy'])->name('app.projects.destroy');
     Route::post('/app/lessons/{lesson}/complete', LessonCompletionController::class)->name('app.lessons.complete');
     Route::get('/app/billing', [BillingController::class, 'index'])->name('app.billing');
-    Route::post('/app/billing/orders', [BillingController::class, 'storeOrder'])->name('app.billing.orders.store');
+    Route::post('/app/billing/orders', [BillingController::class, 'storeOrder'])->middleware('throttle:checkout')->name('app.billing.orders.store');
+    Route::get('/app/billing/paypal/return', [BillingController::class, 'paypalReturn'])->name('app.billing.paypal.return');
+    Route::get('/app/billing/paypal/cancel', [BillingController::class, 'paypalCancel'])->name('app.billing.paypal.cancel');
     Route::post('/app/tools/{tool}/run', [ToolRunController::class, 'store'])->middleware('throttle:ai')->name('app.tools.run');
     Route::delete('/app/tool-runs/{toolRun}', [ToolRunOutputController::class, 'destroy'])->name('app.tool-runs.destroy');
     Route::get('/admin', function () {

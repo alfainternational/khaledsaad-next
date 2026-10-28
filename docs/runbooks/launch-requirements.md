@@ -24,7 +24,8 @@
 | 3 | `MAIL_HOST` / `MAIL_USERNAME` / `MAIL_PASSWORD` | مزوّد بريد معاملات: Postmark أو Resend أو SES أو SMTP الاستضافة | يجب تفعيل SPF وDKIM للنطاق خلال الإعداد، وإلا تذهب رسائل التحقق إلى spam |
 | 4 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_BUCKET` / `AWS_ENDPOINT` | Cloudflare R2 (أرخص) أو AWS S3 أو DigitalOcean Spaces | bucket خاص باسم `khaledsaad-next`، صلاحيات قراءة وكتابة فقط عليه |
 | 5 | `OPENAI_API_KEY` | platform.openai.com → API keys | مفتاح مخصص للمشروع مع حد إنفاق شهري |
-| 6 | `PAYMENT_WEBHOOK_SECRET` / `PAYMENT_PRO_PRICE_ID` | لوحة مزوّد الدفع | يلزم أولاً **اختيار المزوّد** (قرار معلّق، انظر القسم 4) ثم إنشاء منتج «الخطة الاحترافية» بسعر 49 ر.س وربط webhook على `https://next.khaledsaad.net/webhooks/payments` |
+| 6 | `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` | developer.paypal.com → Apps & Credentials → **Live** → Create App | حساب PayPal Business مفعّل باسم النشاط. للاختبار قبل الإطلاق أرسل بيانات تطبيق **Sandbox** أيضاً مع `PAYPAL_MODE=sandbox` |
+| 7 | `PAYPAL_WEBHOOK_ID` | نفس التطبيق → Webhooks → Add Webhook | عنوان الـ webhook: `https://next.khaledsaad.net/webhooks/paypal`، والأحداث المطلوبة: `PAYMENT.CAPTURE.COMPLETED` و`CHECKOUT.ORDER.APPROVED`. يُنشأ بعد تفعيل HTTPS على الدومين |
 
 لا يُطلب من المالك: `APP_KEY` (يُولَّد على الخادم)، ومفاتيح Slack/Postmark/Resend الافتراضية في Laravel ما لم يُختر أحدها للبريد.
 
@@ -54,7 +55,7 @@ numprocs=2
 
 ## 4. قرارات معلّقة على المالك
 
-1. **مزوّد الدفع**: الكود يتحقق من توقيع HMAC عام ولا يفترض مزوّداً بعينه. الخيارات العملية للسوق السعودي: Moyasar أو Tap أو Stripe. التوصية: Moyasar لدعم مدى وApple Pay محلياً.
+1. **مزوّد الدفع: PayPal (معتمد)**. التكامل مبني على Orders v2 مع التقاط فوري والتحقق من توقيع الـ webhook عبر واجهة PayPal. قيدان يجب معرفتهما: PayPal لا يحصّل بالريال السعودي، فالخطة الاحترافية مسعّرة بالدولار (13.00 USD افتراضياً، قابلة للتعديل من لوحة الإدارة)، ولا يدعم مدى أو Apple Pay محلياً؛ إن احتجتهما لاحقاً يُضاف مزوّد ثانٍ بجانب PayPal.
 2. **مزوّد البريد**: التوصية Postmark لمعدل الوصول، أو Resend إن أردت أرخص.
 3. **التخزين**: التوصية Cloudflare R2 بلا رسوم خروج.
 4. **Cloudflare أمام الخادم أم لا**: إن نعم، يُضاف ضبط البروكسي الموثوق قبل الإطلاق حتى تُقرأ عناوين الزوار الحقيقية ويعمل rate limiting بشكل صحيح.
@@ -64,4 +65,4 @@ numprocs=2
 1. الخادم + DNS (البنود 1 و2 في القسم 1) ← يُمكّن تثبيت البيئة والشهادة.
 2. قاعدة البيانات + Redis + البريد ← يُمكّن النشر الأول وتسجيل الحسابات.
 3. التخزين + OpenAI ← يُمكّن الأدوات والرفع.
-4. الدفع ← يُمكّن الاشتراكات؛ يمكن تأجيله بعد الإطلاق التجريبي لأن الأدوات تعمل برصيد ترحيبي.
+4. PayPal (Sandbox أولاً ثم Live) ← يُمكّن الاشتراكات؛ يمكن تأجيله بعد الإطلاق التجريبي لأن الأدوات تعمل برصيد ترحيبي. يُختبر بحساب مشترٍ من Sandbox قبل التحويل إلى `PAYPAL_MODE=live`.

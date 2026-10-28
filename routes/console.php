@@ -32,7 +32,8 @@ Artisan::command('platform:doctor {--env=}', function () {
         $checks['transactional mail'] = ! in_array(config('mail.default'), ['log', 'array'], true);
         $checks['object storage'] = ! in_array(config('filesystems.default'), ['local', 'public'], true);
         $checks['openai configured'] = filled(config('services.openai.key'));
-        $checks['payments configured'] = filled(config('services.payments.webhook_secret')) && filled(config('services.payments.plans.pro.price_id'));
+        $checks['paypal configured'] = filled(config('services.paypal.client_id')) && filled(config('services.paypal.secret')) && filled(config('services.paypal.webhook_id'));
+        $checks['paypal live mode'] = config('services.paypal.mode') === 'live';
         $checks['sitemap renderable'] = rescue(fn () => view('site.sitemap', [
             'articles' => collect(), 'courses' => collect(), 'tools' => collect(),
         ])->render() !== '', false);

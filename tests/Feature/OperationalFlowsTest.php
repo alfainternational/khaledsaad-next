@@ -162,39 +162,4 @@ class OperationalFlowsTest extends TestCase
     {
         $this->artisan('platform:doctor --env=testing')->assertSuccessful();
     }
-
-    public function test_verified_payment_webhook_is_idempotent(): void
-    {
-        config()->set('services.payments.webhook_secret', 'secret');
-        $workspace = Workspace::query()->create(['name' => 'مدفوع', 'slug' => 'paid']);
-        $planId = DB::table('plans')->insertGetId(['slug' => 'pro', 'name' => 'احترافية', 'provider_price_id' => 'price_pro', 'price' => 4900, 'currency' => 'SAR', 'credits' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
-        DB::table('orders')->insert(['public_id' => 'order-100', 'workspace_id' => $workspace->id, 'plan_id' => $planId, 'amount' => 4900, 'currency' => 'SAR', 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
-        $payload = ['event_id' => 'evt_100', 'type' => 'payment.succeeded', 'workspace_id' => $workspace->id, 'order_id' => 'order-100', 'payment_id' => 'pay_100', 'price_id' => 'price_pro', 'amount' => 4900, 'currency' => 'SAR'];
-        $body = json_encode($payload);
-        $server = ['HTTP_X_PLATFORM_SIGNATURE' => hash_hmac('sha256', $body, 'secret'), 'CONTENT_TYPE' => 'application/json'];
-
-        $this->call('POST', '/webhooks/payments', [], [], [], $server, $body)->assertOk();
-        $this->call('POST', '/webhooks/payments', [], [], [], $server, $body)->assertOk();
-
-        $this->assertDatabaseCount('webhook_events', 1);
-        $this->assertDatabaseHas('subscriptions', ['workspace_id' => $workspace->id, 'plan' => 'pro', 'status' => 'active']);
-        $this->assertDatabaseHas('payments', ['provider_payment_id' => 'pay_100', 'amount' => 4900, 'status' => 'succeeded']);
-        $this->assertSame(100, app(CreditLedger::class)->balance($workspace));
-    }
-
-    public function test_payment_webhook_rejects_unknown_price_or_amount(): void
-    {
-        config()->set('services.payments.webhook_secret', 'secret');
-        $workspace = Workspace::query()->create(['name' => 'مدفوع', 'slug' => 'rejected-payment']);
-        $planId = DB::table('plans')->insertGetId(['slug' => 'pro', 'name' => 'احترافية', 'provider_price_id' => 'price_pro', 'price' => 4900, 'currency' => 'SAR', 'credits' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
-        DB::table('orders')->insert(['public_id' => 'order-bad', 'workspace_id' => $workspace->id, 'plan_id' => $planId, 'amount' => 4900, 'currency' => 'SAR', 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
-        $payload = ['event_id' => 'evt_bad', 'type' => 'payment.succeeded', 'workspace_id' => $workspace->id, 'order_id' => 'order-bad', 'payment_id' => 'pay_bad', 'price_id' => 'price_pro', 'amount' => 1, 'currency' => 'SAR'];
-        $body = json_encode($payload);
-
-        $this->call('POST', '/webhooks/payments', [], [], [], [
-            'HTTP_X_PLATFORM_SIGNATURE' => hash_hmac('sha256', $body, 'secret'), 'CONTENT_TYPE' => 'application/json',
-        ], $body)->assertUnprocessable();
-
-        $this->assertSame(0, app(CreditLedger::class)->balance($workspace));
-    }
 }
