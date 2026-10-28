@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="header"><h2 class="font-semibold text-xl text-gray-800">الاشتراك والأرصدة</h2></x-slot>
+    <x-slot name="header"><h1 class="font-semibold text-xl text-gray-800">الاشتراك والأرصدة</h1></x-slot>
     <div class="py-12"><div class="max-w-5xl mx-auto sm:px-6 lg:px-8 grid gap-5 md:grid-cols-2">
         @if(session('status'))<div class="md:col-span-2 bg-green-50 text-green-800 p-4 rounded-xl">{{ session('status') }}</div>@endif
         @foreach($workspaces as $workspace)

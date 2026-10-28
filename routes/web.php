@@ -26,7 +26,7 @@ Route::view('/about', 'site.about')->name('about');
 Route::get('/search', [PublicSiteController::class, 'search'])->middleware('throttle:search')->name('search');
 Route::get('/sitemap.xml', [PublicSiteController::class, 'sitemap'])->name('sitemap');
 Route::get('/feed.xml', [PublicSiteController::class, 'feed'])->name('feed');
-Route::view('/llms.txt', 'site.llms')->name('llms');
+Route::get('/llms.txt', fn () => response()->view('site.llms')->header('Content-Type', 'text/plain; charset=utf-8'))->name('llms');
 Route::post('/webhooks/payments', PaymentWebhookController::class)->middleware('throttle:webhooks')->name('webhooks.payments');
 
 Route::get('/dashboard', function () {

@@ -1,11 +1,11 @@
 <x-app-layout>
-    <x-slot name="header"><h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $project->name }}</h2></x-slot>
+    <x-slot name="header"><h1 class="font-semibold text-xl text-gray-800 leading-tight">{{ $project->name }}</h1></x-slot>
     <div class="py-12"><div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
         @if(session('status'))<div class="bg-green-50 text-green-800 p-4 rounded-xl">{{ session('status') }}</div>@endif
         <div class="bg-white shadow-sm sm:rounded-xl p-6">
             <h3 class="text-xl font-bold mb-4">إعدادات المشروع</h3>
             <form method="POST" action="{{ route('app.projects.update', $project) }}" class="flex gap-3">@csrf @method('PATCH')
-                <input class="flex-1 rounded-lg border-gray-300" name="name" value="{{ $project->name }}" required maxlength="120">
+                <input class="flex-1 rounded-lg border border-gray-300" name="name" value="{{ $project->name }}" required maxlength="120">
                 <button class="px-5 py-2 rounded-lg bg-slate-900 text-white" type="submit">حفظ</button>
             </form>
         </div>

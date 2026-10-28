@@ -71,8 +71,33 @@ class PublicSiteController extends Controller
     public function course(Course $course)
     {
         abort_unless($course->is_published, 404);
+        $course->load('lessons');
 
-        return view('site.academy.show', ['course' => $course->load('lessons')]);
+        $structuredData = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Course',
+            'name' => $course->title,
+            'description' => $course->summary,
+            'inLanguage' => 'ar',
+            'url' => route('academy.show', $course),
+            'provider' => ['@type' => 'Organization', 'name' => 'أثر', 'url' => url('/')],
+            'educationalLevel' => $course->level,
+            'timeRequired' => 'PT'.(int) $course->duration_minutes.'M',
+            'numberOfLessons' => $course->lessons->count(),
+            'hasCourseInstance' => [
+                '@type' => 'CourseInstance',
+                'courseMode' => 'online',
+                'courseWorkload' => 'PT'.(int) $course->duration_minutes.'M',
+            ],
+        ];
+
+        return view('site.academy.show', [
+            'course' => $course,
+            'structuredJson' => json_encode(
+                $structuredData,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
+            ),
+        ]);
     }
 
     public function tools()

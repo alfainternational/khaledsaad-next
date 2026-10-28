@@ -4,7 +4,10 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test:browser": "playwright test",
+        "test:browser:report": "playwright show-report",
+        "audit:visual": "node tests/browser/visual-audit.mjs"
     },
     "devDependencies": {
         "@playwright/test": "^1.64.1",

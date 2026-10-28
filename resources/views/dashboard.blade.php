@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h1 class="font-semibold text-xl text-gray-800 leading-tight">
             مساحة العمل
-        </h2>
+        </h1>
     </x-slot>
 
     <div class="py-12">
@@ -36,9 +36,9 @@
                                 @csrf
                                 <h3 class="text-xl font-bold mb-4">مشروع جديد</h3>
                                 <label class="block mb-2" for="workspace_id">مساحة العمل</label>
-                                <select class="w-full rounded-lg border-gray-300" id="workspace_id" name="workspace_id">@foreach($workspaces as $workspace)<option value="{{ $workspace->id }}">{{ $workspace->name }}</option>@endforeach</select>
+                                <select class="w-full rounded-lg border border-gray-300" id="workspace_id" name="workspace_id">@foreach($workspaces as $workspace)<option value="{{ $workspace->id }}">{{ $workspace->name }}</option>@endforeach</select>
                                 <label class="block mt-4 mb-2" for="project_name">اسم المشروع</label>
-                                <input class="w-full rounded-lg border-gray-300" id="project_name" name="name" required maxlength="120">
+                                <input class="w-full rounded-lg border border-gray-300" id="project_name" name="name" required maxlength="120">
                                 <button class="mt-4 px-5 py-2 rounded-lg bg-orange-600 text-white" type="submit">إنشاء المشروع</button>
                             </form>
                         @endif
