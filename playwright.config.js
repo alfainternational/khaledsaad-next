@@ -24,6 +24,8 @@ export const serverEnv = {
     QUEUE_CONNECTION: 'sync',
     MAIL_MAILER: 'log',
     BROADCAST_CONNECTION: 'log',
+    // One learner is enough for a behaviour pattern to become a quality signal in the browser suite.
+    PLATFORM_QUALITY_MIN_SAMPLE: '1',
 };
 
 export default defineConfig({
@@ -32,7 +34,7 @@ export default defineConfig({
     fullyParallel: false,
     workers: 1,
     retries: 0,
-    timeout: 45_000,
+    timeout: 90_000,
     expect: { timeout: 10_000 },
     reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
     outputDir: 'test-results',

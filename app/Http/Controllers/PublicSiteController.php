@@ -133,7 +133,7 @@ class PublicSiteController extends Controller
     {
         return response()->view('site.sitemap', [
             'articles' => ContentItem::published()->get(),
-            'courses' => Course::query()->where('is_published', true)->get(),
+            'courses' => Course::query()->where('is_published', true)->with('lessons')->get(),
             'tools' => Tool::query()->where('is_published', true)->get(),
         ])->header('Content-Type', 'application/xml');
     }

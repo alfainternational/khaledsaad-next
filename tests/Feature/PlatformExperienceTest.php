@@ -22,10 +22,10 @@ class PlatformExperienceTest extends TestCase
             ->assertOk()
             ->assertSee('dir="rtl"', false)
             ->assertSee('تعلّم. طبّق. قِس الأثر.')
-            ->assertSee('لأصحاب المشاريع')
-            ->assertSee('للمسوّقين والوكالات')
-            ->assertSee('الأكاديمية')
-            ->assertSee('مختبر التسويق')
+            ->assertSee('أصحاب المشاريع')
+            ->assertSee('المسوّقون والوكالات')
+            ->assertSee('جرّب على مشروعك الآن')
+            ->assertSee('المختبر')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('Content-Security-Policy')
             ->assertHeader('X-Request-Id');
@@ -82,7 +82,7 @@ class PlatformExperienceTest extends TestCase
         $this->seed();
 
         $this->get('/search?q=ذكاء')->assertOk()->assertSee('نتائج البحث');
-        $this->get('/academy')->assertOk()->assertSee('مسارات تعليمية تطبيقية');
+        $this->get('/academy')->assertOk()->assertSee('مسارات تطبيقية عن مشروعك أنت');
         $this->get('/tools')->assertOk()->assertSee('مختبر التسويق');
         $this->get('/sitemap.xml')->assertOk()->assertHeader('Content-Type', 'application/xml');
         $this->get('/feed.xml')->assertOk()->assertHeader('Content-Type', 'application/rss+xml; charset=UTF-8');

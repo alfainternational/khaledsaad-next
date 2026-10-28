@@ -3,6 +3,7 @@
 namespace App\Domain\Academy\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Question extends Model
 {
@@ -10,6 +11,22 @@ class Question extends Model
 
     protected function casts(): array
     {
-        return ['options' => 'array', 'answer_key' => 'array'];
+        return ['options' => 'array', 'answer_key' => 'array', 'is_opening' => 'boolean'];
+    }
+
+    public function lesson(): BelongsTo
+    {
+        return $this->belongsTo(Lesson::class);
+    }
+
+    public function bestIndex(): ?int
+    {
+        foreach ($this->options ?? [] as $i => $option) {
+            if (! empty($option['is_best'])) {
+                return (int) $i;
+            }
+        }
+
+        return null;
     }
 }

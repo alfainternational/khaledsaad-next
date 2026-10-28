@@ -9,4 +9,6 @@ return [
     'locale' => env('PLATFORM_LOCALE', 'ar'),
     'support_email' => env('PLATFORM_SUPPORT_EMAIL', 'hello@khaledsaad.net'),
     'backup_marker' => env('PLATFORM_BACKUP_MARKER'),
+    // Minimum distinct learners before a behaviour pattern becomes a quality signal (blueprint §6.1).
+    'quality_min_sample' => (int) env('PLATFORM_QUALITY_MIN_SAMPLE', 5),
 ];

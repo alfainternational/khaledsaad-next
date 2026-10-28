@@ -71,7 +71,7 @@ test.describe('الحساب ومساحة العمل', () => {
         const errors = trackErrors(page);
         await login(page, ADMIN);
 
-        for (const path of ['/admin', '/admin/content', '/admin/operations']) {
+        for (const path of ['/admin', '/admin/academy', '/admin/assessment', '/admin/content', '/admin/operations']) {
             const response = await page.goto(path);
             expect(response?.status(), path).toBe(200);
             await expectNoHorizontalOverflow(page, path);
@@ -79,17 +79,13 @@ test.describe('الحساب ومساحة العمل', () => {
         expect(errors).toEqual([]);
     });
 
-    test('تسجيل الخروج من القائمة يعيد إلى الصفحة العامة', async ({ page, isMobile }) => {
+    test('تسجيل الخروج من قائمة الحساب يعيد إلى الصفحة العامة', async ({ page }) => {
         const errors = trackErrors(page);
         await login(page, MEMBER);
 
-        if (isMobile) {
-            // Responsive hamburger in the Breeze navigation (Alpine-driven).
-            await page.locator('nav button:visible').first().click();
-        } else {
-            await page.locator('nav button', { hasText: 'عضو اختبار المتصفح' }).click();
-        }
-        const logout = page.locator('a[href$="/logout"]:visible, form[action$="/logout"] button:visible').first();
+        // Account menu in the new header (a <details> element; present on desktop and mobile).
+        await page.locator('details.account-menu > summary').click();
+        const logout = page.locator('form[action$="/logout"] button:visible').first();
         await expect(logout).toBeVisible();
         await logout.click();
 

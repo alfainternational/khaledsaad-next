@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Assessment\Models\AssessmentResult;
 use App\Domain\Commerce\Services\CreditLedger;
 use App\Domain\Workspace\Models\Workspace;
 use App\Http\Controllers\Controller;
@@ -38,6 +39,8 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'audience' => ['nullable', 'in:owner,marketer'],
+            'assessment_token' => ['nullable', 'string', 'max:64'],
         ]);
 
         $user = DB::transaction(function () use ($request): User {
@@ -46,13 +49,28 @@ class RegisteredUserController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
             ]);
+            if ($request->filled('audience')) {
+                $user->forceFill(['audience' => $request->input('audience')])->save();
+            }
             $base = Str::slug($request->name) ?: 'workspace';
             $workspace = Workspace::query()->create([
                 'name' => 'مساحة '.$request->name,
                 'slug' => $base.'-'.Str::lower(Str::random(6)),
             ]);
             $workspace->members()->attach($user, ['role' => 'owner']);
-            $workspace->projects()->create(['name' => 'مشروعي الأول', 'slug' => 'first-project']);
+            $project = $workspace->projects()->create(['name' => 'مشروعي الأول', 'slug' => 'first-project']);
+            // A visitor's diagnosis becomes the member's project profile (blueprint §4.2).
+            $token = (string) $request->input('assessment_token', session('assess.result_token', ''));
+            if ($token !== '') {
+                $result = AssessmentResult::query()->where('session_token', $token)->whereNull('user_id')->first();
+                if ($result) {
+                    $result->update(['user_id' => $user->id, 'project_id' => $project->id]);
+                    $project->update(['profile' => $result->project_snapshot]);
+                    if (! $user->audience) {
+                        $user->forceFill(['audience' => $result->audience])->save();
+                    }
+                }
+            }
             app(CreditLedger::class)->record($workspace, 'welcome:'.$workspace->id, 'grant', 20, 'رصيد ترحيبي');
 
             return $user;

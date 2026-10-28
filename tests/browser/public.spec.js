@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test';
 import { expectNoHorizontalOverflow, trackErrors } from './helpers.js';
 
-const PUBLIC_PAGES = ['/', '/academy', '/articles', '/insights', '/tools', '/resources', '/about', '/search?q=تسويق', '/login', '/register'];
+const PUBLIC_PAGES = ['/', '/academy', '/academy/marketing-foundations', '/academy/marketing-foundations/what-marketing-really-is', '/assess', '/articles', '/insights', '/tools', '/resources', '/about', '/search?q=تسويق', '/login', '/register'];
 
 test.describe('الصفحات العامة', () => {
     test('الرئيسية تعرض الهوية والتنقل الرئيسي بلا أخطاء', async ({ page }) => {
@@ -30,7 +30,7 @@ test.describe('الصفحات العامة', () => {
             await toggle.click();
             await expect(toggle).toHaveAttribute('aria-expanded', 'true');
             await expect(nav).toBeVisible();
-            await expect(nav.getByRole('link', { name: 'الأدوات' })).toBeVisible();
+            await expect(nav.getByRole('link', { name: 'المختبر' })).toBeVisible();
         } else {
             await expect(toggle).toBeHidden();
             await expect(nav).toBeVisible();
@@ -55,7 +55,7 @@ test.describe('الصفحات العامة', () => {
 
         await expect(page).toHaveURL(/\/academy\/[a-z0-9-]+$/);
         await expect(page.locator('h1').first()).toBeVisible();
-        await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(1);
+        await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(2);
         await expectNoHorizontalOverflow(page);
     });
 

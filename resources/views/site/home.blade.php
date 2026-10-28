@@ -1,10 +1,113 @@
 @extends('layouts.platform')
+@section('title', 'أثر — تعلّم. طبّق. قِس الأثر.')
+@section('description', 'منصة تعلّم بالممارسة للتسويق والذكاء الاصطناعي: جرّب على مشروعك الآن بلا تسجيل، شخّص مشروعك، واخرج من كل درس بأصل يُقاس في الواقع.')
+@push('structured-data')
+<script type="application/ld+json" nonce="{{ $cspNonce }}">{!! json_encode([['@'.'context' => 'https://schema.org', '@type' => 'Organization', 'name' => 'أثر', 'url' => url('/'), 'logo' => url('/favicon.ico')], ['@'.'context' => 'https://schema.org', '@type' => 'WebSite', 'name' => 'أثر', 'url' => url('/'), 'potentialAction' => ['@type' => 'SearchAction', 'target' => route('search').'?q={search_term_string}', 'query-input' => 'required name=search_term_string']]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+@endpush
 @section('content')
-<section class="hero"><div class="shell hero-grid"><div class="hero-copy"><span class="kicker">منصة التسويق والذكاء الاصطناعي بالعربية</span><h1>تعلّم. طبّق.<br><em>قِس الأثر.</em></h1><p>حوّل المعرفة التسويقية إلى خطة، تجربة، ومخرج محفوظ داخل مشروعك—بدون تنظير زائد أو أدوات منفصلة عن السياق.</p><div class="hero-actions"><a class="button" href="{{ route('academy.index') }}">ابدأ مسارك</a><a class="text-link" href="{{ route('tools.index') }}">جرّب أداة مجانية ←</a></div><div class="trust-line"><span>محتوى موثّق</span><span>تطبيق عملي</span><span>مصمم للسوق العربي</span></div></div><div class="hero-visual" aria-label="دورة العمل من الفكرة إلى الأثر"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="signal-card card-a"><small>اكتشف</small><strong>فرصة واضحة</strong><span>سؤال حقيقي من السوق</span></div><div class="signal-card card-b"><small>طبّق</small><strong>موجز حملة</strong><span>جاهز للمراجعة والتنفيذ</span></div><div class="signal-card card-c"><small>قِس</small><strong>قرار أسبوعي</strong><span>استمر، عدّل، أو أوقف</span></div><div class="visual-core"><span>أثر</span><small>تعلم متصل بالعمل</small></div></div></div></section>
-<section class="audience section"><div class="shell"><div class="section-heading"><span class="kicker">ابدأ من احتياجك</span><h2>مساران، ونظام عمل واحد</h2></div><div class="audience-grid"><a class="audience-card owner" href="{{ route('academy.index') }}"><span class="card-index">01</span><div><h3>لأصحاب المشاريع</h3><p>شخّص وضعك، اختر الأولوية، وابنِ خطة مفهومة يمكنك متابعتها دون فريق ضخم.</p><span class="arrow">استكشف مسار صاحب المشروع ←</span></div></a><a class="audience-card marketer" href="{{ route('tools.index') }}"><span class="card-index">02</span><div><h3>للمسوّقين والوكالات</h3><p>طوّر المنهجية، أنجز المخرجات بسرعة، ونظّم عدة مشاريع في مساحة عمل واحدة.</p><span class="arrow">استكشف مسار المحترفين ←</span></div></a></div></div></section>
-<section class="loop section section-dark"><div class="shell"><div class="section-heading light"><span class="kicker">النظام المتصل</span><h2>لا تتوقف عند القراءة</h2><p>كل خطوة تقود إلى الخطوة التالية حتى تصبح المعرفة مخرجاً يمكن استخدامه وقياسه.</p></div><ol class="loop-grid"><li><b>1</b><h3>اكتشف</h3><p>مقال أو رؤية تجيب عن سؤال محدد.</p></li><li><b>2</b><h3>تعلّم</h3><p>درس قصير يشرح القرار والمنهج.</p></li><li><b>3</b><h3>طبّق</h3><p>أداة أو تمرين يحوّل الفكرة إلى عمل.</p></li><li><b>4</b><h3>احفظ</h3><p>النتيجة داخل مشروعك مع نسخها السابقة.</p></li><li><b>5</b><h3>طوّر</h3><p>قِس النتيجة وابنِ التجربة التالية.</p></li></ol></div></section>
-<section class="section"><div class="shell"><div class="section-heading split"><div><span class="kicker">من الأكاديمية</span><h2>تعلم ينتج شيئاً حقيقياً</h2></div><a class="text-link" href="{{ route('academy.index') }}">كل المسارات ←</a></div><div class="cards three">@foreach($courses as $course)<a class="content-card course-card" href="{{ route('academy.show',$course) }}"><span class="tag">{{ $course->level }}</span><h3>{{ $course->title }}</h3><p>{{ $course->summary }}</p><div class="card-meta"><span>{{ $course->duration_minutes }} دقيقة</span><span>مشروع تطبيقي</span></div></a>@endforeach</div></div></section>
-<section class="section section-paper"><div class="shell"><div class="section-heading split"><div><span class="kicker">المجلة</span><h2>أفكار حديثة، بسياق عربي</h2></div><a class="text-link" href="{{ route('articles.index') }}">جميع المقالات ←</a></div><div class="cards three">@foreach($articles as $article)<article class="content-card"><span class="tag">{{ $article->eyebrow }}</span><h3><a href="{{ route('articles.show',$article) }}">{{ $article->title }}</a></h3><p>{{ $article->excerpt }}</p><div class="card-meta"><span>{{ $article->reading_minutes }} دقائق</span><span>{{ $article->published_at->format('Y/m/d') }}</span></div></article>@endforeach</div></div></section>
-<section class="section lab-preview"><div class="shell lab-grid"><div><span class="kicker">مختبر التسويق</span><h2>أدوات تبدأ بالسياق، لا بقالب فارغ</h2><p>أدخل هدفك وجمهورك وعرضك. تحصل على مخرج واضح، تحفظه في مشروعك، ثم تعود لتطويره.</p><a class="button button-light" href="{{ route('tools.index') }}">افتح المختبر</a></div><div class="tool-stack">@foreach($tools as $tool)<a href="{{ route('tools.show',$tool) }}"><span>{{ $tool->category }}</span><strong>{{ $tool->name }}</strong><small>{{ $tool->credit_cost ? $tool->credit_cost.' رصيد' : 'مجاني' }}</small></a>@endforeach</div></div></section>
-<section class="section final-cta"><div class="shell"><div><span class="kicker">ابدأ من مشروعك الحالي</span><h2>خطوة واحدة واضحة<br>أفضل من عشر أفكار معلّقة.</h2></div><a class="button" href="{{ route('register') }}">أنشئ مساحة عمل مجانية</a></div></section>
+@php($problems = \App\Domain\Assessment\Services\Catalog::PROBLEMS)
+@php($budgets = \App\Domain\Assessment\Services\Catalog::BUDGETS)
+<section class="hero"><div class="shell hero-grid">
+    <div>
+        <x-athar.kicker>منصة تعلّم بالممارسة للتسويق والذكاء الاصطناعي</x-athar.kicker>
+        <h1>تعلّم. طبّق.<br><em>قِس الأثر.</em></h1>
+        <p class="lead">كل درس ينتهي بأصل لمشروعك أنت، وكل أصل يُقاس في الواقع.</p>
+        <div class="btn-row"><x-athar.button href="{{ route('assess.start') }}">شخّص مشروعك مجاناً</x-athar.button><x-athar.button variant="secondary" href="{{ route('academy.index') }}">تصفّح الأكاديمية</x-athar.button></div>
+    </div>
+    @if($continue)
+    <div class="try-box" id="continue-box">
+        <x-athar.kicker>أكمل من حيث توقفت</x-athar.kicker>
+        <h2>{{ $continue['lesson']->title }}</h2>
+        <p class="muted">{{ $continue['lesson']->course->title }} · الدرس {{ $continue['lesson']->position }} من {{ $continue['progress']['total'] }}</p>
+        <x-athar.progress :value="$continue['progress']['percent']" :done="$continue['progress']['done']" :total="$continue['progress']['total']" />
+        <div class="btn-row" style="margin-top:14px"><x-athar.button href="{{ route('academy.lesson', [$continue['lesson']->course, $continue['lesson']]) }}">أكمل الدرس</x-athar.button><x-athar.button variant="text" href="{{ route('dashboard') }}">لوحتي</x-athar.button></div>
+    </div>
+    @else
+    <div class="try-box" id="try-box">
+        <x-athar.kicker>جرّب على مشروعك الآن</x-athar.kicker>
+        <h2>أول خطوة لمشروعك خلال ثانية، بلا تسجيل</h2>
+        <p class="muted small">ثلاثة حقول → خطوة مقترحة بسبب ودرس محدد. بقواعد لا ذكاء اصطناعي.</p>
+        <form id="try-form" method="get" action="{{ route('home') }}" data-rules="{{ json_encode($rules, JSON_UNESCAPED_UNICODE) }}" data-assess="{{ route('assess.start') }}">
+            <div class="fields">
+                <div class="field"><label for="try-offer">ماذا تبيع ولمن؟</label><input id="try-offer" name="offer" required maxlength="120" placeholder="مثال: منتجات عناية طبيعية للنساء في الرياض" value="{{ request('offer') }}"></div>
+                <div class="field"><label for="try-problem">أكبر مشكلة الآن</label><select id="try-problem" name="problem" required><option value="">اختر…</option>@foreach($problems as $key => $label)<option value="{{ $key }}" @selected(request('problem') === $key)>{{ $label }}</option>@endforeach</select></div>
+                <div class="field"><label for="try-budget">الميزانية الشهرية للتسويق</label><select id="try-budget" name="budget">@foreach($budgets as $key => $label)<option value="{{ $key }}" @selected(request('budget', '2000') === (string) $key)>{{ $label }}</option>@endforeach</select></div>
+            </div>
+            <x-athar.button type="submit" block>أعطني أول خطوة</x-athar.button>
+        </form>
+        <div class="first-step" id="first-step" @if(! $firstStep) hidden @endif aria-live="polite">
+            <x-athar.kicker>أصلك الأول</x-athar.kicker>
+            <h3 data-step>{{ $firstStep['step'] ?? '' }}</h3>
+            <p data-reason>{{ $firstStep['reason'] ?? '' }}</p>
+            <p class="small"><b>الدرس:</b> <span data-lesson-title>{{ $firstStep['lesson_title'] ?? '' }}</span></p>
+            <div class="btn-row"><a class="btn btn-primary" data-assess-link href="{{ $firstStep ? route('assess.start', ['offer' => request('offer'), 'problem' => request('problem'), 'budget' => request('budget')]) : route('assess.start') }}">أكمل التشخيص</a><a class="btn btn-secondary" data-lesson-link href="{{ $firstStep['lesson_url'] ?? route('academy.index') }}">افتح الدرس</a></div>
+        </div>
+    </div>
+    @endif
+</div></section>
+
+<section class="section section-tight" aria-label="أرقام حيّة"><div class="shell">
+    <div class="numbers">
+        @if($numbers['assets_week'] !== null)<div class="number"><b>{{ number_format($numbers['assets_week']) }}</b><span>أصل أُنشئ هذا الأسبوع</span></div>@endif
+        @if($numbers['results'] !== null)<div class="number"><b>{{ number_format($numbers['results']) }}</b><span>نتيجة واقعية سُجّلت</span></div>@endif
+        @if($numbers['improvement'] !== null)<div class="number"><b>+{{ $numbers['improvement'] }}</b><span>نقطة متوسط التحسّن بعد المسار الأول</span></div>@endif
+        @if($numbers['last_asset'])<div class="number"><b style="font-size:20px">{{ $numbers['last_asset']['type'] }}</b><span>آخر أصل: {{ $numbers['last_asset']['sector'] }} · {{ $numbers['last_asset']['city'] }} · {{ $numbers['last_asset']['when'] }}</span></div>@endif
+        @if($numbers['assets_week'] === null && $numbers['results'] === null && $numbers['improvement'] === null && ! $numbers['last_asset'])<div class="number"><b>0</b><span>الأرقام الحيّة تظهر هنا عندما تتجاوز 10 (أصول، نتائج واقعية، متوسط التحسّن)</span></div>@endif
+    </div>
+</div></section>
+
+<section class="section"><div class="shell">
+    <div class="section-heading"><x-athar.kicker>المساران</x-athar.kicker><h2>اختر مسارك</h2></div>
+    <div class="audience-grid">
+        <a class="audience-card owner" href="{{ route('academy.index') }}#program-owner"><div><h3>أصحاب المشاريع</h3><ol><li>تشخيص مشروعك</li><li>خريطة أولويات</li><li>دروس عن مشروعك</li><li>أثر يُقاس</li></ol></div><span class="arrow">برنامج أصحاب المشاريع ←</span></a>
+        <a class="audience-card marketer" href="{{ route('academy.index') }}#program-marketer"><div><h3>المسوّقون والوكالات</h3><ol><li>سلاسل أصول لكل عميل</li><li>مشاركة بروابط للعملاء</li><li>مسارات متقدمة في القياس والأتمتة</li></ol></div><span class="arrow">برنامج المسوّقين ←</span></a>
+    </div>
+</div></section>
+
+<section class="section section-dark"><div class="shell">
+    <div class="section-heading"><x-athar.kicker>النظام المتصل</x-athar.kicker><h2>خمس خطوات، لا تتوقف عند القراءة</h2><p>كل خطوة تقود إلى التالية حتى تصبح المعرفة أصلاً يُقاس.</p></div>
+    <ol class="steps"><li><b>1</b><h3>اكتشف</h3><p>تشخيص لمشروعك ينتهي بخريطة أولويات.</p></li><li><b>2</b><h3>تعلّم</h3><p>درس قصير يبدأ بقرارك قبل الشرح.</p></li><li><b>3</b><h3>طبّق</h3><p>مختبر مضمّن يحوّل الدرس إلى أصل.</p></li><li><b>4</b><h3>احفظ</h3><p>الأصل في مشروعك بإصداراته.</p></li><li><b>5</b><h3>قِس</h3><p>التزام واقعي ونتيجة تُسجَّل بعد أسبوع.</p></li></ol>
+</div></section>
+
+<section class="section"><div class="shell">
+    <div class="section-heading split"><div><x-athar.kicker>المسارات المميزة</x-athar.kicker><h2>تخرج من كل مسار بأصل محدد</h2></div><x-athar.button variant="text" href="{{ route('academy.index') }}">كل المسارات ←</x-athar.button></div>
+    <div class="grid grid-3">@foreach($courses as $course)<x-athar.card :title="$course->title" :desc="$course->summary" :tag="$course->level" :href="$course->is_published ? route('academy.show', $course) : null" :soon="! $course->is_published" :number="str_pad($course->position, 2, '0', STR_PAD_LEFT)"><p class="outcome"><b>تخرج بـ:</b> {{ $course->outcome }}</p><x-slot:meta><span>{{ $course->duration_minutes }} دقيقة</span><span>{{ $course->is_published ? 'متاح الآن' : 'قريباً' }}</span></x-slot:meta></x-athar.card>@endforeach</div>
+</div></section>
+
+<section class="section section-soft"><div class="shell">
+    <div class="section-heading split"><div><x-athar.kicker>المختبر</x-athar.kicker><h2>أدوات تغذّي سلسلة أصولك</h2></div><x-athar.button variant="text" href="{{ route('tools.index') }}">افتح المختبر ←</x-athar.button></div>
+    <div class="grid grid-3">@foreach($tools as $tool)<x-athar.card :title="$tool->name" :desc="$tool->description" :tag="$tool->category" :href="route('tools.show', $tool)"><p class="outcome"><b>يغذّي:</b> {{ ['التخطيط' => 'خطة القناة الأولى وخطة التسويق', 'المحتوى' => 'تقويم المحتوى والرسالة الأساسية', 'التحويل' => 'صفحة الهبوط وخطة القياس'][$tool->category] ?? 'الأصول التالية في السلسلة' }}</p><x-slot:meta><span>{{ $tool->credit_cost ? $tool->credit_cost.' رصيد' : 'مجاني بلا AI' }}</span></x-slot:meta></x-athar.card>@endforeach</div>
+</div></section>
+
+<section class="section"><div class="shell">
+    <div class="section-heading split"><div><x-athar.kicker>من المجلة</x-athar.kicker><h2>اقرأ ثم طبّق بأداة</h2></div><x-athar.button variant="text" href="{{ route('articles.index') }}">كل المواد ←</x-athar.button></div>
+    <div class="grid grid-3">@foreach($articles as $article)<x-athar.card heading="h3" :title="$article->title" :desc="$article->excerpt" :tag="$article->eyebrow" :href="route('articles.show', $article)"><p class="outcome"><b>طبّق بـ:</b> {{ $tools->first()?->name ?? 'المختبر' }}</p><x-slot:meta><span>{{ $article->reading_minutes }} دقائق</span><span>{{ $article->published_at?->format('Y/m/d') }}</span></x-slot:meta></x-athar.card>@endforeach</div>
+</div></section>
+
+<section class="section section-tight"><div class="shell"><div class="cta-band"><div><x-athar.kicker>دعوة أخيرة</x-athar.kicker><h2>شخّص مشروعك مجاناً</h2><p class="muted" style="margin:0">ثلاث مراحل، عشر دقائق، وتخرج بخريطة أولويات قابلة للتنزيل بلا تسجيل.</p></div><x-athar.button href="{{ route('assess.start') }}">ابدأ التشخيص</x-athar.button></div></div></section>
 @endsection
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
+(function(){
+  var f=document.getElementById('try-form');if(!f)return;
+  var rules=JSON.parse(f.dataset.rules||'{}'),box=document.getElementById('first-step');
+  f.addEventListener('submit',function(e){
+    var offer=f.offer.value.trim(),problem=f.problem.value,budget=f.budget.value;
+    if(!problem)return;
+    e.preventDefault();
+    var r=rules[problem]||rules.no_target;var v=r&&(budget==='0'&&r.budget_zero?r.budget_zero:(r.default||r));
+    if(!v)return;
+    var name=offer?offer.slice(0,80):'مشروعك';
+    box.querySelector('[data-step]').textContent=v.step.replace('{offer}',name);
+    box.querySelector('[data-reason]').textContent=v.reason;
+    box.querySelector('[data-lesson-title]').textContent=v.title;
+    box.querySelector('[data-lesson-link]').href=v.url;
+    var q=new URLSearchParams({offer:offer,problem:problem,budget:budget});
+    box.querySelector('[data-assess-link]').href=f.dataset.assess+'?'+q.toString();
+    try{localStorage.setItem('athar-try',JSON.stringify({offer:offer,problem:problem,budget:budget,at:Date.now()}))}catch(err){}
+    box.hidden=false;box.scrollIntoView({behavior:'smooth',block:'nearest'});
+    window.atharEvent&&window.atharEvent('home.first_step',{problem:problem,budget:budget});
+  });
+})();
+</script>
+@endpush

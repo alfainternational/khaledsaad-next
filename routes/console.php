@@ -59,3 +59,5 @@ Schedule::command('platform:recover-runs')->everyFiveMinutes()->withoutOverlappi
 // Shared hosting has no Supervisor: drain the queue from the scheduler every minute.
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')->name('platform-queue-drain')->everyMinute()->withoutOverlapping();
 Schedule::command('platform:backup')->dailyAt('03:10')->withoutOverlapping();
+Schedule::command('platform:compute-quality-signals')->hourly()->withoutOverlapping();
+Schedule::command('platform:send-checkin-reminders')->dailyAt('08:00')->withoutOverlapping();

@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Domain\Academy\Models\Course;
-use App\Domain\Academy\Models\LearningPath;
 use App\Domain\Content\Models\ContentItem;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Workspace\Models\Workspace;
@@ -47,24 +45,7 @@ class DatabaseSeeder extends Seeder
             $item->sources()->create(['publisher' => $data['type'] === 'translated_analysis' ? 'Google Search Central' : 'منهجية أثر', 'title' => $data['type'] === 'translated_analysis' ? 'إرشادات إنشاء محتوى مفيد وموثوق' : 'مرجع تحريري داخلي', 'url' => $data['type'] === 'translated_analysis' ? 'https://developers.google.com/search/docs/fundamentals/creating-helpful-content' : 'https://khaledsaad.net/methodology', 'published_on' => now()->subMonth(), 'language' => $data['type'] === 'translated_analysis' ? 'en' : 'ar']);
         }
 
-        $path = LearningPath::query()->create(['title' => 'مسار صاحب المشروع', 'slug' => 'business-owner-path', 'summary' => 'من تشخيص الأولوية إلى تجربة تسويقية قابلة للقياس.', 'audience' => 'أصحاب المشاريع', 'is_published' => true]);
-        $course = Course::query()->create(['title' => 'أساسيات التسويق الرقمي من القرار إلى القياس', 'slug' => 'digital-marketing-foundations', 'level' => 'مبتدئ', 'summary' => 'مسار تطبيقي يبني استراتيجية أولية ويحوّلها إلى تجربة قابلة للقياس.', 'duration_minutes' => 120, 'is_published' => true]);
-        $path->courses()->attach($course, ['position' => 1]);
-        $module = $course->modules()->create(['title' => 'من القرار إلى التجربة', 'slug' => 'decision-to-experiment', 'outcome' => 'خطة أولية وتجربة أسبوعية.', 'position' => 1]);
-        $lessons = $course->lessons()->createMany([
-            ['title' => 'اختيار الهدف والجمهور', 'slug' => 'goal-and-audience', 'objective' => 'صياغة هدف تجاري وشريحة أساسية.', 'content' => 'حدّد نتيجة واحدة، ثم صِف الشريحة من خلال المشكلة والسياق ودافع القرار.', 'position' => 1, 'duration_minutes' => 25, 'is_preview' => true],
-            ['title' => 'بناء الرسالة والتجربة', 'slug' => 'message-and-experiment', 'objective' => 'تحويل الفرضية إلى رسالة واختبار.', 'content' => 'اكتب وعداً واضحاً ودليلاً وخطوة تالية، ثم اختر قناة واحدة للاختبار.', 'position' => 2, 'duration_minutes' => 35],
-            ['title' => 'لوحة القياس الأسبوعية', 'slug' => 'weekly-scorecard', 'objective' => 'اختيار مؤشرات مرتبطة بالهدف.', 'content' => 'راقب مؤشراً قيادياً وآخر نهائياً، وسجّل القرار الناتج عن كل قراءة.', 'position' => 3, 'duration_minutes' => 30],
-        ]);
-        foreach ($lessons as $lesson) {
-            $lesson->update(['course_module_id' => $module->id]);
-            $lesson->activities()->create([
-                'title' => 'مخرج تطبيقي: '.$lesson->title,
-                'kind' => 'deliverable',
-                'instructions' => 'طبّق الفكرة على مشروعك واكتب قرارك التالي.',
-                'position' => 1,
-            ]);
-        }
+        $this->call([AcademySeeder::class, AssessmentSeeder::class]);
 
         DB::table('resource_templates')->insert([
             ['name' => 'قالب موجز الحملة', 'slug' => 'campaign-brief-template', 'description' => 'أسئلة منظمة لتحويل الهدف إلى موجز.', 'template' => json_encode(['goal', 'audience', 'offer', 'message', 'measurement']), 'is_published' => true, 'created_at' => now(), 'updated_at' => now()],
