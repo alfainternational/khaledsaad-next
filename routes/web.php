@@ -27,6 +27,19 @@ Route::get('/search', [PublicSiteController::class, 'search'])->middleware('thro
 Route::get('/sitemap.xml', [PublicSiteController::class, 'sitemap'])->name('sitemap');
 Route::get('/feed.xml', [PublicSiteController::class, 'feed'])->name('feed');
 Route::get('/llms.txt', fn () => response()->view('site.llms')->header('Content-Type', 'text/plain; charset=utf-8'))->name('llms');
+// Operational health for external monitoring: no secrets, 503 when a background heartbeat is stale.
+Route::get('/health.json', function () {
+    $now = now()->timestamp;
+    $age = fn (string $key) => ($ts = (int) cache()->get($key, 0)) > 0 ? $now - $ts : null;
+    $db = rescue(fn () => \Illuminate\Support\Facades\DB::select('select 1') !== [], false);
+    $scheduler = $age('platform:scheduler_heartbeat');
+    $worker = $age('platform:worker_heartbeat');
+    $ok = $db && $scheduler !== null && $scheduler < 600 && $worker !== null && $worker < 600;
+
+    return response()->json([
+        'ok' => $ok, 'database' => $db, 'scheduler_age_seconds' => $scheduler, 'worker_age_seconds' => $worker, 'time' => now()->toIso8601String(),
+    ], $ok ? 200 : 503)->header('Cache-Control', 'no-store');
+})->middleware('throttle:search')->name('health');
 Route::post('/webhooks/paypal', PayPalWebhookController::class)->middleware('throttle:webhooks')->name('webhooks.paypal');
 
 Route::get('/dashboard', function () {
@@ -54,6 +67,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('admin.index');
     })->name('admin.index');
     Route::get('/admin/content', [AdminContentController::class, 'index'])->name('admin.content.index');
+    Route::get('/admin/content/{contentItem:id}/edit', [AdminContentController::class, 'edit'])->name('admin.content.edit');
+    Route::put('/admin/content/{contentItem:id}', [AdminContentController::class, 'update'])->name('admin.content.update');
     Route::post('/admin/content/{contentItem:id}/publish', [AdminContentController::class, 'publish'])->name('admin.content.publish');
     Route::get('/admin/operations', [OperationsController::class, 'index'])->name('admin.operations');
     Route::post('/admin/redirects', [OperationsController::class, 'storeRedirect'])->name('admin.redirects.store');
