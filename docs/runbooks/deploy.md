@@ -2,6 +2,8 @@
 
 ## المتطلبات
 
+> ما يُطلب من المالك قبل البدء (وصول، مفاتيح، قرارات) موثّق في [launch-requirements.md](launch-requirements.md)، وقالب البيئة في `.env.production.example`.
+
 - PHP 8.3 مع extensions المطلوبة من Composer.
 - PostgreSQL وRedis وNginx وSupervisor.
 - مستخدم نشر محدود الصلاحيات ومجلد `/var/www/khaledsaad-next`.
