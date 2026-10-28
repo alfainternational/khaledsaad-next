@@ -12,6 +12,18 @@ ENV_SOURCE="$HOME/khaledsaad-next.env"
 PHP="/opt/alt/php83/usr/bin/php"
 COMPOSER="/opt/cpanel/composer/bin/composer"
 
+# Self-update: always run the latest committed version of this script.
+SELF_URL="https://raw.githubusercontent.com/alfainternational/khaledsaad-next/$BRANCH/deploy/cpanel-bootstrap.sh"
+if [ -z "${BOOTSTRAP_NO_SELF_UPDATE:-}" ] && [ -f "$0" ]; then
+    _tmp="$(mktemp)"
+    if curl -fsSL "$SELF_URL" -o "$_tmp" && [ -s "$_tmp" ] && ! cmp -s "$_tmp" "$0"; then
+        cp "$_tmp" "$0" && rm -f "$_tmp"
+        echo "==> bootstrap script updated; re-running"
+        BOOTSTRAP_NO_SELF_UPDATE=1 exec bash "$0" "$@"
+    fi
+    rm -f "$_tmp"
+fi
+
 [ -x "$PHP" ] || PHP="$(command -v php)"
 if [ ! -f "$COMPOSER" ]; then
     COMPOSER="$(command -v composer || true)"
