@@ -80,6 +80,12 @@ if [ ! -f storage/app/.seeded ]; then
     echo "==> Seeding (first run only)"
     "$PHP" artisan db:seed --force --no-interaction && touch storage/app/.seeded
 fi
+# Stage-1 learning content (programs, 12 paths, the 6-lesson foundations course, diagnosis questions) is imported once;
+# later edits live in the admin studio, so the seeders never run again automatically.
+if [ ! -f storage/app/.seeded-stage1 ]; then
+    echo "==> Importing stage-1 content (once)"
+    "$PHP" artisan db:seed --class=AcademySeeder --force --no-interaction         && "$PHP" artisan db:seed --class=AssessmentSeeder --force --no-interaction         && touch storage/app/.seeded-stage1
+fi
 "$PHP" artisan storage:link >/dev/null 2>&1 || true
 echo "==> Caching"
 "$PHP" artisan optimize:clear >/dev/null
