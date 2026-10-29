@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Academy\Models\Course;
 use App\Domain\Commerce\Services\CreditLedger;
 use App\Domain\Lab\Models\Tool;
+use App\Domain\Lab\Services\AssetVault;
 use App\Domain\Workspace\Models\Workspace;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,15 +34,15 @@ class PlatformWorkflowsTest extends TestCase
         $this->assertDatabaseMissing('projects', ['id' => $project->id]);
     }
 
-    public function test_verified_member_can_complete_a_published_lesson(): void
+    public function test_unpublished_lesson_cannot_be_marked_complete(): void
     {
         $user = User::factory()->create();
         $course = Course::query()->create(['title' => 'دورة', 'slug' => 'workflow-course', 'summary' => 'ملخص', 'is_published' => true]);
         $lesson = $course->lessons()->create(['title' => 'درس', 'slug' => 'workflow-lesson', 'objective' => 'هدف', 'content' => 'محتوى']);
 
-        $this->actingAs($user)->post(route('app.lessons.complete', $lesson), ['deliverable' => 'طبقت التمرين'])->assertRedirect();
+        $this->actingAs($user)->post(route('app.lessons.complete', $lesson), ['deliverable' => 'طبقت التمرين'])->assertNotFound();
 
-        $this->assertDatabaseHas('activity_completions', ['user_id' => $user->id, 'lesson_id' => $lesson->id]);
+        $this->assertDatabaseMissing('activity_completions', ['user_id' => $user->id, 'lesson_id' => $lesson->id]);
     }
 
     public function test_project_page_lists_saved_tool_outputs_and_member_can_remove_one(): void
@@ -52,9 +53,9 @@ class PlatformWorkflowsTest extends TestCase
         $workspace->members()->attach($user, ['role' => 'editor']);
         $project = $workspace->projects()->create(['name' => 'مشروع', 'slug' => 'project']);
         $tool = Tool::query()->where('slug', 'campaign-brief-builder')->firstOrFail();
-        $output = app(\App\Domain\Lab\Services\AssetVault::class)->save($user, $project, $tool, 'مخرج محفوظ', 'campaign_brief', "# مخرج محفوظ
+        $output = app(AssetVault::class)->save($user, $project, $tool, 'مخرج محفوظ', 'campaign_brief', '# مخرج محفوظ
 
-نص", ['offer' => 'x']);
+نص', ['offer' => 'x']);
 
         $this->actingAs($user)->get(route('app.projects.show', $project))->assertOk()->assertSee('مخرج محفوظ')->assertSee('أصول المشروع');
         $this->actingAs($user)->delete(route('app.outputs.destroy', $output))->assertRedirect();

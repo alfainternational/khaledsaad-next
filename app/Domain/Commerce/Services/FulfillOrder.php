@@ -3,6 +3,7 @@
 namespace App\Domain\Commerce\Services;
 
 use App\Domain\Workspace\Models\Workspace;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -70,9 +71,12 @@ class FulfillOrder
             DB::table('orders')->where('id', $order->id)->update([
                 'status' => 'paid', 'provider_checkout_id' => $paypalOrderId, 'updated_at' => now(),
             ]);
+            $subscription = DB::table('subscriptions')->where('workspace_id', $workspace->id)->first();
+            $periodStart = $subscription?->ends_at && Carbon::parse($subscription->ends_at)->isFuture()
+                ? Carbon::parse($subscription->ends_at) : now();
             DB::table('subscriptions')->updateOrInsert(
                 ['workspace_id' => $workspace->id],
-                ['plan_id' => $plan->id, 'plan' => $plan->slug, 'status' => 'active', 'provider' => 'paypal', 'provider_id' => $capture['id'], 'updated_at' => now(), 'created_at' => now()]
+                ['plan_id' => $plan->id, 'plan' => $plan->slug, 'status' => 'active', 'provider' => 'paypal', 'provider_id' => $capture['id'], 'ends_at' => $periodStart->copy()->addMonthNoOverflow(), 'updated_at' => now(), 'created_at' => $subscription?->created_at ?? now()]
             );
             if ((int) $plan->credits > 0) {
                 $this->ledger->record($workspace, 'payment:paypal:'.$capture['id'], 'grant', (int) $plan->credits, 'رصيد دفعة مؤكدة عبر PayPal', ['order' => $orderPublicId]);

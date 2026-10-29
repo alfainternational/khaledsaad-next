@@ -18,19 +18,20 @@
     <link rel="canonical" href="@yield('canonical', url()->current())">
     <link rel="alternate" hreflang="ar" href="@yield('canonical', url()->current())">
     <link rel="alternate" type="application/rss+xml" title="أحدث محتوى أثر" href="{{ route('feed') }}">
+    @stack('before-styles')
+    <script nonce="{{ $cspNonce }}">(function(){var t;try{t=localStorage.getItem('athar-theme');if(localStorage.getItem('athar-depth')==='fast'){document.documentElement.classList.add('fast')}}catch(e){}if(t!=='dark'&&t!=='light'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.add('js')})();</script>
     <link rel="stylesheet" href="{{ asset('css/platform.css') }}?v={{ filemtime(public_path('css/platform.css')) }}">
-    <script nonce="{{ $cspNonce }}">(function(){try{var t=localStorage.getItem('athar-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t)}if(localStorage.getItem('athar-depth')==='fast'){document.documentElement.classList.add('fast')}}catch(e){}document.documentElement.classList.add('js')})();</script>
     @stack('structured-data')
     @stack('head')
 </head>
-<body class="@yield('body_class')">
+<body class="@yield('body_class') {{ !empty($compactLayout) ? 'compact-layout' : '' }}">
 <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
 @if($viewer->previewAs())
 <div class="preview-banner">تعرض المنصة الآن كـ «{{ $viewer->previewLabel() }}» (معاينة إدارية). <form method="post" action="{{ route('admin.preview', ['as' => 'off']) }}">@csrf<button type="submit">إنهاء المعاينة</button></form></div>
 @endif
 <header class="site-header"><div class="shell nav-wrap">
     <a class="brand" href="{{ route('home') }}" aria-label="أثر — الرئيسية"><span class="brand-mark">أ</span><span>أثر</span></a>
-    <nav id="main-nav" class="main-nav" aria-label="التنقل الرئيسي">
+    <nav id="main-nav" class="main-nav" aria-label="التنقل الرئيسي" @if(!empty($compactLayout)) hidden @endif>
         <a href="{{ route('academy.index') }}" @if(request()->routeIs('academy.*')) aria-current="page" @endif>تعلّم</a>
         <a href="{{ route('tools.index') }}" @if(request()->routeIs('tools.*')) aria-current="page" @endif>المختبر</a>
         <a href="{{ route('articles.index') }}" @if(request()->routeIs('articles.*')) aria-current="page" @endif>المجلة</a>
@@ -57,17 +58,21 @@
 </div></header>
 <div id="search-layer" class="search-layer" hidden><form action="{{ route('search') }}" role="search"><label class="sr-only" for="layer-q">ابحث في المنصة</label><input id="layer-q" class="input" name="q" placeholder="ابحث عن درس أو أداة أو مادة…"><button class="btn btn-primary" type="submit">بحث</button><button class="btn btn-secondary search-close" type="button">إغلاق</button></form></div>
 <main id="main">@yield('content')</main>
+@if(!empty($compactLayout))
+<footer class="auth-footer"><a href="{{ route('home') }}">أثر · خالد سعد</a><a href="{{ route('contact') }}">تواصل معنا</a><span>© {{ date('Y') }} أثر</span></footer>
+@else
 <footer class="site-footer"><div class="shell"><div class="footer-grid">
     <div><a class="brand brand-light" href="{{ route('home') }}"><span class="brand-mark">أ</span><span>أثر</span></a><p>منصة تعلّم بالممارسة للتسويق والذكاء الاصطناعي: كل درس ينتهي بأصل لمشروعك، وكل أصل يُقاس في الواقع.</p><p><strong>تعلّم. طبّق. قِس الأثر.</strong></p></div>
     <div><h2>تعلّم</h2><a href="{{ route('academy.index') }}#program-owner">برنامج أصحاب المشاريع</a><a href="{{ route('academy.index') }}#program-marketer">برنامج المسوّقين</a><a href="{{ route('academy.index') }}">الأكاديمية</a><a href="{{ route('assess.start') }}">شخّص مشروعك</a></div>
     <div><h2>طبّق</h2><a href="{{ route('tools.index') }}">المختبر</a><a href="{{ route('resources') }}">الموارد والقوالب</a><a href="{{ route('glossary.index') }}">القاموس</a><a href="{{ route('articles.index') }}">المجلة</a><a href="{{ route('insights.index') }}">الرؤى العالمية</a><a href="{{ route('news.index') }}">الأخبار</a><a href="{{ route('case-studies.index') }}">دراسات الحالة</a><a href="{{ route('research.index') }}">الأبحاث</a></div>
-    <div><h2>المنصة</h2><a href="{{ route('about') }}">عن أثر</a><a href="{{ route('app.billing') }}">التسعير</a><a href="mailto:{{ config('platform.support_email') }}">الاتصال</a><a href="{{ route('about') }}#privacy">الخصوصية</a><a href="{{ route('about') }}#terms">الشروط</a><a href="{{ route('feed') }}">RSS</a><a href="{{ route('llms') }}">llms.txt</a></div>
+    <div><h2>المنصة</h2><a href="{{ route('about') }}">عن أثر</a><a href="{{ route('pricing') }}">التسعير</a><a href="{{ route('contact') }}">الاتصال</a><a href="{{ route('privacy') }}">الخصوصية</a><a href="{{ route('terms') }}">الشروط</a><a href="{{ route('feed') }}">RSS</a><a href="{{ route('llms') }}">llms.txt</a></div>
 </div>
 <div class="newsletter-wrap" id="newsletter">
 <form class="newsletter" action="{{ route('newsletter.store') }}" method="post" data-newsletter>@csrf<label class="sr-only" for="footer-email">البريد الإلكتروني للنشرة</label><input id="footer-email" name="email" type="email" placeholder="بريدك لنشرة أسبوعية: فكرة، تطبيق، أداة" autocomplete="email" required><input class="sr-only" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn btn-primary" type="submit">انضم</button></form>
 <p class="newsletter-status" data-newsletter-status role="status" @if(! session('newsletter') && ! $errors->has('email')) hidden @endif>{{ session('newsletter') ?: $errors->first('email') }}</p>
 </div>
 <div class="footer-bottom"><span>© {{ date('Y') }} أثر — خالد سعد</span><span>محتوى عربي أصيل ومصادر عالمية مُراجعة.</span></div></div></footer>
+@endif
 <script nonce="{{ $cspNonce }}">
 (function(){
   var d=document,root=d.documentElement;
@@ -75,7 +80,12 @@
   t&&t.addEventListener('click',function(){var o=t.getAttribute('aria-expanded')==='true';t.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o)});
   var th=d.querySelector('.theme-toggle');
   function cur(){var a=root.getAttribute('data-theme');if(a)return a;return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
-  if(th){th.setAttribute('aria-pressed',String(cur()==='dark'));th.addEventListener('click',function(){var nx=cur()==='dark'?'light':'dark';root.setAttribute('data-theme',nx);th.setAttribute('aria-pressed',String(nx==='dark'));try{localStorage.setItem('athar-theme',nx)}catch(e){}})}
+  var systemTheme=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');
+  function applyTheme(value){root.setAttribute('data-theme',value);if(th)th.setAttribute('aria-pressed',String(value==='dark'))}
+  function savedTheme(){try{return localStorage.getItem('athar-theme')}catch(e){return null}}
+  if(th){applyTheme(cur());th.addEventListener('click',function(){var nx=cur()==='dark'?'light':'dark';applyTheme(nx);try{localStorage.setItem('athar-theme',nx)}catch(e){}})}
+  if(systemTheme&&systemTheme.addEventListener)systemTheme.addEventListener('change',function(e){var saved=savedTheme();if(saved!=='dark'&&saved!=='light')applyTheme(e.matches?'dark':'light')});
+  window.addEventListener('storage',function(e){if(e.key==='athar-theme')applyTheme(e.newValue==='dark'||e.newValue==='light'?e.newValue:systemTheme&&systemTheme.matches?'dark':'light')});
   var so=d.querySelector('.search-open'),sl=d.querySelector('#search-layer'),sc=d.querySelector('.search-close');
   function closeS(){sl.hidden=true;sl.classList.remove('is-open');so.setAttribute('aria-expanded','false')}
   so&&so.addEventListener('click',function(){sl.hidden=false;sl.classList.add('is-open');so.setAttribute('aria-expanded','true');sl.querySelector('input').focus()});

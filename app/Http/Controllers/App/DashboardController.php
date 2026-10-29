@@ -4,6 +4,7 @@ namespace App\Http\Controllers\App;
 
 use App\Domain\Academy\Models\Course;
 use App\Domain\Academy\Models\LearningPath;
+use App\Domain\Academy\Models\Lesson;
 use App\Domain\Academy\Models\RealWorldCheckin;
 use App\Domain\Academy\Services\ProgressService;
 use App\Domain\Assessment\Models\AssessmentResult;
@@ -59,7 +60,7 @@ class DashboardController extends Controller
         }
         $completedWithoutCommit = DB::table('activity_completions')->where('user_id', $user->id)->whereNotNull('lesson_id')->pluck('lesson_id')->diff($checkins->pluck('lesson_id'));
         if ($completedWithoutCommit->isNotEmpty()) {
-            $lesson = \App\Domain\Academy\Models\Lesson::query()->with('course')->find($completedWithoutCommit->first());
+            $lesson = Lesson::query()->with('course')->find($completedWithoutCommit->first());
             if ($lesson) {
                 $plan[] = ['label' => 'التزم بفعل واقعي لدرس «'.$lesson->title.'»', 'url' => route('academy.lesson', [$lesson->course, $lesson]).'#part-apply'];
             }
@@ -67,7 +68,7 @@ class DashboardController extends Controller
 
         // Next certificate: the started course closest to completion + the real-result requirement.
         $nextCertificate = $started->sortByDesc(fn ($s) => $s['progress']['percent'])->first();
-        $hasRealResult = $checkins->where('mode', 'commit')->whereNotNull('recorded_at')->isNotEmpty();
+        $hasRealResult = $nextCertificate ? $checkins->where('mode', 'commit')->whereNotNull('recorded_at')->whereIn('lesson_id', $nextCertificate['course']->lessons->pluck('id'))->isNotEmpty() : false;
         $certificates = DB::table('certificates')->where('user_id', $user->id)->get();
 
         return view('app.dashboard', [
@@ -89,7 +90,7 @@ class DashboardController extends Controller
         $completed = DB::table('activity_completions')->join('lessons', 'lessons.id', '=', 'activity_completions.lesson_id')
             ->join('courses', 'courses.id', '=', 'lessons.course_id')->where('activity_completions.user_id', $user->id)
             ->orderByDesc('activity_completions.completed_at')->get(['lessons.title as lesson', 'courses.title as course', 'courses.slug as course_slug', 'lessons.slug as lesson_slug', 'activity_completions.completed_at']);
-        $certificates = DB::table('certificates')->join('courses', 'courses.id', '=', 'certificates.course_id')->where('certificates.user_id', $user->id)->get(['courses.title', 'certificates.verification_code', 'certificates.issued_at']);
+        $certificates = DB::table('certificates')->join('courses', 'courses.id', '=', 'certificates.course_id')->where('certificates.user_id', $user->id)->get(['courses.title', 'certificates.verification_code', 'certificates.issued_at', 'certificates.revoked_at']);
         $realResults = RealWorldCheckin::query()->where('user_id', $user->id)->where('mode', 'commit')->whereNotNull('recorded_at')->count();
 
         return view('app.progress', compact('program', 'courses', 'completed', 'certificates', 'realResults'));

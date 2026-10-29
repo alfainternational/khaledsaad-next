@@ -1,6 +1,7 @@
 {!! '<'.'?xml version="1.0" encoding="UTF-8"?'.'>' !!}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-@foreach([route('home'),route('articles.index'),route('news.index'),route('insights.index'),route('case-studies.index'),route('research.index'),route('glossary.index'),route('academy.index'),route('tools.index'),route('resources'),route('about'),route('assess.start')] as $url)<url><loc>{{ $url }}</loc></url>@endforeach
+@foreach([route('home'),route('articles.index'),route('news.index'),route('insights.index'),route('case-studies.index'),route('research.index'),route('glossary.index'),route('academy.index'),route('tools.index'),route('resources'),route('about'),route('pricing'),route('contact'),route('privacy'),route('terms'),route('assess.start')] as $url)<url><loc>{{ $url }}</loc></url>@endforeach
+@foreach($resources as $resource)<url><loc>{{ route('resources.show', $resource) }}</loc><lastmod>{{ $resource->updated_at->toAtomString() }}</lastmod></url>@endforeach
 @foreach($articles as $article)<url><loc>{{ route('articles.show',$article) }}</loc><lastmod>{{ ($article->last_reviewed_at ?? $article->updated_at)->toAtomString() }}</lastmod></url>@endforeach
 @foreach($terms as $term)<url><loc>{{ route('glossary.show',$term) }}</loc><lastmod>{{ $term->updated_at->toAtomString() }}</lastmod></url>@endforeach
 @foreach($topics as $topic)<url><loc>{{ route('topics.show',$topic->slug) }}</loc></url>@endforeach

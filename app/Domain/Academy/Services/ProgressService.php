@@ -2,6 +2,7 @@
 
 namespace App\Domain\Academy\Services;
 
+use App\Domain\Academy\Models\Certificate;
 use App\Domain\Academy\Models\Course;
 use App\Domain\Academy\Models\Lesson;
 use App\Domain\Academy\Models\RealWorldCheckin;
@@ -48,7 +49,7 @@ class ProgressService
             return true;
         }
         $answered = LearnerEvent::query()->where('user_id', $user->id)->where('lesson_id', $lesson->id)->where('event', 'question.answered')
-            ->whereNotNull('question_id')->distinct()->count('question_id');
+            ->whereIn('question_id', $lesson->questions()->where('is_opening', false)->select('id'))->distinct()->count('question_id');
 
         return $answered >= $required;
     }
@@ -79,23 +80,26 @@ class ProgressService
 
     public function maybeIssueCertificate(User $user, Course $course): bool
     {
+        if (! $course->is_published) {
+            return false;
+        }
         $progress = $this->courseProgress($user, $course);
         if (! $progress['is_complete']) {
             return false;
         }
-        $hasRealResult = RealWorldCheckin::query()->where('user_id', $user->id)->whereNotNull('recorded_at')
-            ->whereIn('lesson_id', $course->lessons()->pluck('id'))->exists();
+        $hasRealResult = RealWorldCheckin::query()->where('user_id', $user->id)->where('mode', 'commit')->whereNotNull('result')->whereNotNull('recorded_at')
+            ->whereIn('lesson_id', $course->lessons()->pluck('id'))->get()
+            ->contains(fn (RealWorldCheckin $checkin) => collect($checkin->result ?? [])->except(['note', 'practice'])->contains(fn ($value) => filled($value)));
         if (! $hasRealResult) {
             return false;
         }
-        if (DB::table('certificates')->where('user_id', $user->id)->where('course_id', $course->id)->exists()) {
-            return true;
-        }
-        DB::table('certificates')->insert([
-            'user_id' => $user->id, 'course_id' => $course->id, 'verification_code' => (string) Str::uuid(), 'issued_at' => now(),
-        ]);
+        // firstOrCreate handles concurrent issuance via the existing user/course unique key.
+        $certificate = Certificate::query()->firstOrCreate(
+            ['user_id' => $user->id, 'course_id' => $course->id],
+            ['verification_code' => (string) Str::uuid(), 'issued_at' => now()]
+        );
 
-        return true;
+        return $certificate->revoked_at === null;
     }
 
     /** The lesson the learner touched last (for "أكمل من حيث توقفت"). */

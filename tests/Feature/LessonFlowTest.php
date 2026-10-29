@@ -48,15 +48,18 @@ class LessonFlowTest extends TestCase
         return ['offer' => 'منتجات عناية طبيعية للنساء في الرياض', 'sector' => 'beauty', 'city' => 'الرياض', 'budget' => 3000, 'channel' => 'instagram', 'goal' => 'leads', 'goal_number' => 60, 'audience' => 'نساء 25–40 ذوات بشرة حساسة'];
     }
 
-    public function test_academy_lists_two_programs_and_twelve_courses_with_only_one_openable(): void
+    public function test_academy_lists_two_programs_and_twelve_published_courses(): void
     {
         $page = $this->get('/academy')->assertOk()->assertSee('برنامج أصحاب المشاريع')->assertSee('برنامج المسوّقين')->assertSee('"@type":"ItemList"', false)->assertSee('ثمانية أجزاء في كل درس');
         foreach (['أساسيات التسويق وفهم السوق', 'الجمهور والشخصيات', 'بناء خطة التسويق المتكاملة'] as $title) {
             $page->assertSee($title);
         }
         $this->assertSame(12, Course::query()->count());
-        $this->assertSame(1, Course::query()->where('is_published', true)->count());
-        $page->assertSee('href="'.route('academy.show', 'marketing-foundations').'"', false)->assertDontSee('/academy/paid-ads', false);
+        $this->assertSame(12, Course::query()->where('is_published', true)->count());
+        $page->assertSee('href="'.route('academy.show', 'marketing-foundations').'"', false)->assertSee('/academy/paid-ads', false);
+        $this->get('/academy/paid-ads')->assertOk();
+        $this->get('/sitemap.xml')->assertOk()->assertSee('/academy/paid-ads', false);
+        Course::query()->where('slug', 'paid-ads')->update(['is_published' => false]);
         $this->get('/academy/paid-ads')->assertNotFound();
         $this->get('/sitemap.xml')->assertOk()->assertDontSee('/academy/paid-ads', false);
     }
@@ -212,10 +215,10 @@ class LessonFlowTest extends TestCase
         $this->assertDatabaseHas('learner_events', ['event' => 'lesson.part_reached', 'part' => 'concept', 'lesson_id' => $this->lesson->id]);
     }
 
-    public function test_legacy_completion_route_still_works(): void
+    public function test_legacy_completion_route_requires_the_same_learning_evidence(): void
     {
         $user = $this->member();
-        $this->actingAs($user)->post(route('app.lessons.complete', $this->lesson), ['deliverable' => 'x'])->assertRedirect();
-        $this->assertDatabaseHas('activity_completions', ['user_id' => $user->id, 'lesson_id' => $this->lesson->id]);
+        $this->actingAs($user)->post(route('app.lessons.complete', $this->lesson), ['deliverable' => 'x'])->assertRedirect()->assertSessionHasErrors('completion');
+        $this->assertDatabaseMissing('activity_completions', ['user_id' => $user->id, 'lesson_id' => $this->lesson->id]);
     }
 }

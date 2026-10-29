@@ -19,7 +19,7 @@
     </div>
     <aside class="stack">
         <div class="card" id="certificates"><x-athar.kicker>الشهادات</x-athar.kicker>
-            @if($certificates->isEmpty())<p class="muted small">تُصدر شهادة المسار عند إكمال كل دروسه وتسجيل نتيجة واقعية واحدة على الأقل.</p>@else<ul class="list">@foreach($certificates as $cert)<li><span>{{ $cert->title }}<br><span class="small muted">رمز التحقق: <code>{{ $cert->verification_code }}</code></span></span><span class="when">{{ \Illuminate\Support\Carbon::parse($cert->issued_at)->format('Y/m/d') }}</span></li>@endforeach</ul>@endif
+            @if($certificates->isEmpty())<p class="muted small">تُصدر شهادة المسار عند إكمال كل دروسه وتسجيل نتيجة واقعية واحدة على الأقل.</p>@else<ul class="list">@foreach($certificates as $cert)<li><span>{{ $cert->title }}<br><a class="text-link" href="{{ route('certificates.show', $cert->verification_code) }}">{{ $cert->revoked_at ? 'شهادة ملغاة — عرض الحالة' : 'عرض الشهادة والتحقق' }}</a><br><span class="small muted">رمز التحقق: <code class="verification-code">{{ $cert->verification_code }}</code></span></span><span class="when">{{ \Illuminate\Support\Carbon::parse($cert->issued_at)->format('Y/m/d') }}</span></li>@endforeach</ul>@endif
         </div>
     </aside>
 </div></section>

@@ -8,12 +8,13 @@
                 <h3 class="text-xl font-bold">{{ $workspace->name }}</h3>
                 <p class="mt-3">الرصيد المتاح: <strong class="text-2xl">{{ $workspace->balance }}</strong></p>
                 <p class="mt-2">الخطة: <strong>{{ $workspace->subscription->plan ?? 'free' }}</strong></p>
-                <p>الحالة: {{ $workspace->subscription->status ?? 'active' }}</p>
+                <p>الحالة: {{ ($workspace->subscription?->ends_at && \Illuminate\Support\Carbon::parse($workspace->subscription->ends_at)->isPast()) ? 'انتهت الفترة المدفوعة' : ($workspace->subscription->status ?? 'active') }}</p>
+                @if($workspace->subscription?->ends_at)<p>نهاية الفترة: {{ \Illuminate\Support\Carbon::parse($workspace->subscription->ends_at)->format('Y/m/d') }}</p>@endif
             </article>
         @endforeach
         @foreach($plans as $plan)
             <article class="bg-slate-900 text-white rounded-xl shadow-sm p-6">
-                <h3 class="text-xl font-bold">{{ $plan->name }}</h3><p class="text-3xl mt-3">{{ number_format($plan->price / 100, 2) }} {{ $plan->currency }}</p><p>{{ $plan->credits }} رصيد</p>
+                <h3 class="text-xl font-bold">{{ $plan->name }}</h3><p class="text-3xl mt-3">{{ number_format($plan->price / 100, 2) }} {{ $plan->currency }} / شهر</p><p>{{ $plan->credits }} رصيد</p><p class="mt-2 text-sm">تجديد يدوي بدفعة مستقلة. لا يوجد خصم متكرر تلقائي.</p>
                 @if($workspaces->isNotEmpty())
                     @if($paymentsEnabled)
                         <form method="POST" action="{{ route('app.billing.orders.store') }}" class="mt-4">@csrf<input type="hidden" name="workspace_id" value="{{ $workspaces->first()->id }}"><input type="hidden" name="plan_id" value="{{ $plan->id }}"><button class="px-5 py-2 bg-orange-500 rounded-lg" type="submit">اشترك عبر PayPal</button></form>

@@ -25,6 +25,7 @@ use App\Support\Viewer;
 use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * صفحة الدرس — /academy/{course}/{lesson} (blueprint §4.5): the full form, built on the learner's own project.
@@ -82,7 +83,7 @@ class LessonController extends Controller
             'journal' => $journal, 'checkin' => $checkin, 'savedAsset' => $savedAsset, 'answered' => $answered, 'completed' => $completed,
             'courseProgress' => $courseProgress, 'member' => (bool) $user, 'coachEnabled' => LessonCoach::enabled() && $user,
             'coachAnswer' => session('coach.answer.'.$lesson->id), 'parts' => Lesson::PARTS, 'channels' => Catalog::CHANNELS,
-            'relatedTool' => Tool::query()->where('is_published', true)->first(),
+            'relatedTool' => Tool::query()->where('is_published', true)->where('course_slug', $course->slug)->first(),
             'relatedArticle' => ContentItem::published()->when($course->topic, fn ($q) => $q->where('topic', 'like', '%'.$course->topic.'%'))->latest('published_at')->first() ?? ContentItem::published()->latest('published_at')->first(),
             'structuredJson' => json_encode([
                 '@context' => 'https://schema.org', '@type' => 'LearningResource', 'name' => $lesson->title, 'description' => $lesson->objective,
@@ -102,6 +103,13 @@ class LessonController extends Controller
         $mode = $request->input('situation') === 'project' && $project && ! empty($project->profile['offer']) ? 'project' : 'general';
         $situation = $this->composer->situation($lesson, $mode === 'project' ? $project : null, $mode);
         $keys = collect(array_merge($lesson->guided_steps ?? [], $lesson->lab_config['fields'] ?? []))->pluck('key')->all();
+        $numericRules = [];
+        foreach (array_merge($lesson->guided_steps ?? [], $lesson->lab_config['fields'] ?? []) as $field) {
+            if (($field['type'] ?? '') === 'number') {
+                $numericRules[$field['key']] = ['sometimes', 'nullable', 'numeric', 'min:'.($field['min'] ?? 0), 'max:'.($field['max'] ?? 1000000000)];
+            }
+        }
+        $request->validate($numericRules);
         $input = [];
         foreach ($keys as $key) {
             $value = $request->input($key);
@@ -199,9 +207,12 @@ class LessonController extends Controller
         $checkin = RealWorldCheckin::query()->where('user_id', $user->id)->where('lesson_id', $lesson->id)->where('mode', 'commit')->latest()->firstOrFail();
         $rules = [];
         foreach ($lesson->real_result_fields ?? [] as $field) {
-            $rules['result.'.$field['key']] = ($field['type'] ?? 'text') === 'number' ? ['nullable', 'numeric'] : ['nullable', 'string', 'max:500'];
+            $rules['result.'.$field['key']] = ($field['type'] ?? 'text') === 'number' ? ['nullable', 'numeric', 'min:0', 'max:1000000000'] : ['nullable', 'string', 'max:500'];
         }
         $data = $request->validate($rules + ['note' => ['nullable', 'string', 'max:1000']]);
+        if (! collect($data['result'] ?? [])->contains(fn ($value) => filled($value))) {
+            throw ValidationException::withMessages(['result' => 'سجّل قيمة فعلية واحدة على الأقل. الصفر نتيجة مقبولة، أما الحقول الفارغة فلا تُعد نتيجة.']);
+        }
         $checkin->update(['result' => ($data['result'] ?? []) + ['note' => $data['note'] ?? null], 'recorded_at' => now()]);
         $this->events->record($request, 'checkin.recorded', ['lesson_id' => $lesson->id, 'part' => 'apply']);
         $this->progress->maybeIssueCertificate($user, $course);

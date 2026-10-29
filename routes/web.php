@@ -20,15 +20,19 @@ use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\Site\AcademyController;
 use App\Http\Controllers\Site\AssessController;
 use App\Http\Controllers\Site\AssetController;
+use App\Http\Controllers\Site\CertificateController;
 use App\Http\Controllers\Site\EventController;
 use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\LabController;
 use App\Http\Controllers\Site\LessonController;
 use App\Http\Controllers\Site\MagazineController;
 use App\Http\Controllers\Site\NewsletterController;
+use App\Http\Controllers\Site\PageController;
+use App\Http\Controllers\Site\ResourceController;
 use App\Http\Controllers\Site\SearchController;
 use App\Http\Controllers\Webhooks\PayPalWebhookController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -66,7 +70,9 @@ Route::post('/academy/{course}/{lesson}/lab', [LessonController::class, 'lab'])-
 Route::get('/academy/{course}/{lesson}/whatif', [LessonController::class, 'whatIf'])->middleware('throttle:events')->name('academy.lesson.whatif');
 Route::post('/academy/{course}/{lesson}/decision', [LessonController::class, 'decision'])->middleware('throttle:events')->name('academy.lesson.decision');
 Route::post('/academy/{course}/{lesson}/report', [LessonController::class, 'report'])->middleware('throttle:reports')->name('academy.lesson.report');
-Route::get('/resources/{template}/download', [AcademyController::class, 'template'])->name('resources.download');
+Route::get('/resources/{template}/download', [ResourceController::class, 'download'])->name('resources.download');
+Route::get('/resources/{template}', [ResourceController::class, 'show'])->name('resources.show');
+Route::get('/certificates/{code}', [CertificateController::class, 'show'])->middleware('throttle:search')->name('certificates.show');
 
 Route::post('/assets/print', [AssetController::class, 'print'])->name('assets.print');
 Route::post('/events', [EventController::class, 'store'])->middleware('throttle:events')->name('events.store');
@@ -78,8 +84,13 @@ Route::get('/tools/simulator', [LabController::class, 'simulator'])->name('tools
 Route::get('/tools/{tool}', [LabController::class, 'show'])->name('tools.show');
 Route::post('/tools/{tool}/generate', [LabController::class, 'generate'])->middleware('throttle:events')->name('tools.generate');
 Route::get('/a/{token}', [LabController::class, 'shared'])->name('assets.shared');
-Route::get('/resources', [PublicSiteController::class, 'resources'])->name('resources');
+Route::get('/resources', [ResourceController::class, 'index'])->name('resources');
 Route::view('/about', 'site.about')->name('about');
+Route::get('/pricing', [PageController::class, 'pricing'])->name('pricing');
+Route::view('/contact', 'site.contact')->name('contact');
+Route::post('/contact', [PageController::class, 'contact'])->middleware('throttle:contact')->name('contact.store');
+Route::view('/privacy', 'site.privacy')->name('privacy');
+Route::view('/terms', 'site.terms')->name('terms');
 Route::get('/search', SearchController::class)->middleware('throttle:search')->name('search');
 Route::get('/sitemap.xml', [PublicSiteController::class, 'sitemap'])->name('sitemap');
 Route::get('/feed.xml', [PublicSiteController::class, 'feed'])->name('feed');
@@ -88,7 +99,7 @@ Route::get('/llms.txt', fn () => response()->view('site.llms')->header('Content-
 Route::get('/health.json', function () {
     $now = now()->timestamp;
     $age = fn (string $key) => ($ts = (int) cache()->get($key, 0)) > 0 ? $now - $ts : null;
-    $db = rescue(fn () => \Illuminate\Support\Facades\DB::select('select 1') !== [], false);
+    $db = rescue(fn () => DB::select('select 1') !== [], false);
     $scheduler = $age('platform:scheduler_heartbeat');
     $worker = $age('platform:worker_heartbeat');
     $ok = $db && $scheduler !== null && $scheduler < 600 && $worker !== null && $worker < 600;
@@ -100,6 +111,7 @@ Route::get('/health.json', function () {
 Route::post('/webhooks/paypal', PayPalWebhookController::class)->middleware('throttle:webhooks')->name('webhooks.paypal');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/resources/{template}/save', [ResourceController::class, 'save'])->name('resources.save');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/app/progress', [DashboardController::class, 'progress'])->name('app.progress');
     Route::post('/app/assess/claim', [AssessController::class, 'claim'])->name('assess.claim');

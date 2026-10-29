@@ -51,7 +51,7 @@ class LessonComposer
             $key = $step['key'];
             $fromInput = array_key_exists($key, $input) && trim((string) $input[$key]) !== '';
             $source = $step['source'] ?? null;
-            $fromSituation = ! $fromInput && $source && isset($situation[$source]) && $situation[$source] !== '' && $situation[$source] !== 0;
+            $fromSituation = ! $fromInput && $source && isset($situation[$source]) && $situation[$source] !== '';
             $steps[] = $step + [
                 'value' => $fromInput ? $input[$key] : ($fromSituation ? $situation[$source] : ($step['default'] ?? '')),
                 'prefilled' => $fromSituation && ($situation['mode'] ?? 'general') === 'project',
@@ -69,7 +69,7 @@ class LessonComposer
             $key = $field['key'];
             $fromInput = array_key_exists($key, $input) && trim((string) $input[$key]) !== '';
             $source = $field['source'] ?? null;
-            $fromSituation = ! $fromInput && $source && isset($situation[$source]) && $situation[$source] !== '' && $situation[$source] !== 0;
+            $fromSituation = ! $fromInput && $source && isset($situation[$source]) && $situation[$source] !== '';
             $fields[] = $field + [
                 'value' => $fromInput ? $input[$key] : ($fromSituation ? $situation[$source] : ($field['default'] ?? '')),
                 'prefilled' => $fromSituation && ($situation['mode'] ?? 'general') === 'project',
@@ -132,7 +132,7 @@ class LessonComposer
         }
         $saved = $userId
             ? ToolOutput::query()->where('user_id', $userId)->when($projectId, fn ($q) => $q->where('project_id', $projectId))
-                ->whereIn('output_type', $links->pluck('required_tool_output_type'))->latest()->get()->keyBy('output_type')
+                ->whereIn('output_type', $links->pluck('required_tool_output_type'))->orderByDesc('id')->get()->unique('output_type')->keyBy('output_type')
             : collect();
         $lessonsByType = Lesson::query()->whereIn('outcome_type', $links->pluck('required_tool_output_type'))->with('course')->get()->keyBy('outcome_type');
 

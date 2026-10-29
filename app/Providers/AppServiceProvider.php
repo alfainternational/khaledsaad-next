@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
+use App\Support\Viewer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
-use App\Support\Viewer;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -32,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer('*', fn ($view) => $view->with('viewer', $this->app->make(Viewer::class)));
         RateLimiter::for('auth', fn (Request $request) => Limit::perMinute(10)->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
         RateLimiter::for('search', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
+        RateLimiter::for('contact', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
         RateLimiter::for('ai', fn (Request $request) => Limit::perMinute(10)->by((string) ($request->user()?->id ?? $request->ip())));
         RateLimiter::for('webhooks', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
         RateLimiter::for('events', fn (Request $request) => Limit::perMinute(120)->by((string) ($request->user()?->id ?? $request->ip())));

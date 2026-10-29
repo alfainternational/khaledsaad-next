@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Domain\Content\Models\ContentItem;
-use App\Domain\Lab\Models\Tool;
 use App\Domain\Workspace\Models\Workspace;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -67,5 +66,6 @@ class DatabaseSeeder extends Seeder
         $this->call(LabSeeder::class);
         // المرحلة 3: المجلة (التصنيفات والوسوم والمؤلفون والمصادر المراقبة، 40 مصطلحاً و50 مادة من database/content).
         $this->call(MagazineSeeder::class);
+        $this->call(CompleteAcademySeeder::class);
     }
 }

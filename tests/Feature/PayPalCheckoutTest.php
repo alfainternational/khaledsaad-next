@@ -129,9 +129,12 @@ class PayPalCheckoutTest extends TestCase
         $this->assertDatabaseHas('subscriptions', ['workspace_id' => $workspace->id, 'plan' => 'pro', 'status' => 'active', 'provider' => 'paypal']);
         $this->assertSame(100, app(CreditLedger::class)->balance($workspace));
 
+        $periodEnd = DB::table('subscriptions')->where('workspace_id', $workspace->id)->value('ends_at');
+        $this->assertSame(now()->addMonthNoOverflow()->toDateString(), substr($periodEnd, 0, 10));
         $this->actingAs($user)->get('/app/billing/paypal/return?token=PP-2')->assertRedirect('/app/billing');
         $this->assertDatabaseCount('payments', 1);
         $this->assertSame(100, app(CreditLedger::class)->balance($workspace));
+        $this->assertSame($periodEnd, DB::table('subscriptions')->where('workspace_id', $workspace->id)->value('ends_at'));
     }
 
     public function test_return_rejects_a_capture_whose_amount_does_not_match_the_order(): void

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Academy\Models\Course;
+use App\Domain\Academy\Models\ResourceTemplate;
 use App\Domain\Content\Models\Author;
 use App\Domain\Content\Models\ContentItem;
 use App\Domain\Content\Models\GlossaryTerm;
 use App\Domain\Content\Models\Tag;
 use App\Domain\Lab\Models\Tool;
-use App\Support\Markdown;
 use Illuminate\Support\Facades\DB;
 
 /** Discovery endpoints (sitemap, feed) and the pages that pre-date the stage controllers. The magazine lives in Site\MagazineController. */
@@ -86,6 +86,7 @@ class PublicSiteController extends Controller
 
         return response()->view('site.sitemap', [
             'articles' => ContentItem::published()->get(),
+            'resources' => ResourceTemplate::query()->where('is_published', true)->get(),
             'courses' => Course::query()->where('is_published', true)->with('lessons')->get(),
             'topics' => Course::query()->orderBy('position')->get(),
             'tools' => Tool::query()->where('is_published', true)->where('slug', '!=', 'lesson-lab')->get(),
