@@ -14,6 +14,10 @@ class EventController extends Controller
 {
     public function store(Request $request, EventRecorder $events, ProgressService $progress)
     {
+        // Beacons fire while the browser follows a redirect; keep that request from consuming the page's flash message.
+        if ($request->hasSession()) {
+            $request->session()->reflash();
+        }
         $payload = $request->isJson() ? (array) $request->json()->all() : $request->all();
         if (is_string($payload['meta'] ?? null)) {
             $payload['meta'] = json_decode($payload['meta'], true) ?: [];

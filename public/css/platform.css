@@ -279,6 +279,8 @@ html.fast .deep-only{display:none}html.fast .fast-only{display:block}.fast-only{
 .list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}.list li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}.list li:last-child{border:0}
 .list .when{color:var(--muted);font-size:13px;white-space:nowrap}
 .dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start}
+/* Grid tracks default to min-content width: a wide table inside a card must scroll, not stretch the page (412px overflow). */
+.dash-grid>*,.result-layout>*,.lesson-layout>*,.studio>*{min-width:0}.card{min-width:0;max-width:100%}.table-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
 
 /* ---------- غرفة التحكم ---------- */
 .admin-nav{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 24px}.admin-nav a{padding:8px 14px;min-height:40px;display:inline-flex;align-items:center;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:14px;font-weight:700}

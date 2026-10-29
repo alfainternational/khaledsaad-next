@@ -3,9 +3,18 @@ import { expect } from '@playwright/test';
 
 export const MEMBER = { email: 'browser-member@example.invalid', password: 'BrowserPass!2026' };
 export const ADMIN = { email: 'browser-admin@example.invalid', password: 'BrowserPass!2026' };
+const MOBILE_MEMBER = { email: 'browser-member-mobile@example.invalid', password: 'BrowserPass!2026' };
+
+/** The member account owned by this Playwright project, so desktop and mobile runs never share learner state. */
+export function memberFor(testInfo) {
+    return testInfo.project.name === 'mobile' ? MOBILE_MEMBER : MEMBER;
+}
 
 /** Fails the test if the page is wider than its viewport (horizontal overflow). */
 export async function expectNoHorizontalOverflow(page, label = page.url()) {
+    // Measure only once stylesheets and fonts are applied: right after a redirect the unstyled DOM is wider.
+    await page.waitForLoadState('load');
+    await page.evaluate(() => document.fonts?.ready);
     const { scrollWidth, clientWidth } = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,

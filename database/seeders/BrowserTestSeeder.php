@@ -16,27 +16,32 @@ class BrowserTestSeeder extends Seeder
 {
     public const MEMBER_EMAIL = 'browser-member@example.invalid';
 
+    /** A second member so the desktop and mobile Playwright projects never share learner state. */
+    public const MOBILE_MEMBER_EMAIL = 'browser-member-mobile@example.invalid';
+
     public const ADMIN_EMAIL = 'browser-admin@example.invalid';
 
     public const PASSWORD = 'BrowserPass!2026';
 
     public function run(): void
     {
-        $member = User::query()->updateOrCreate(
-            ['email' => self::MEMBER_EMAIL],
-            ['name' => 'عضو اختبار المتصفح', 'email_verified_at' => now(), 'password' => Hash::make(self::PASSWORD)],
-        );
+        foreach ([self::MEMBER_EMAIL => 'browser-member-space', self::MOBILE_MEMBER_EMAIL => 'browser-member-mobile-space'] as $email => $slug) {
+            $member = User::query()->updateOrCreate(
+                ['email' => $email],
+                ['name' => 'عضو اختبار المتصفح', 'email_verified_at' => now(), 'password' => Hash::make(self::PASSWORD)],
+            );
 
-        $workspace = Workspace::query()->firstOrCreate(
-            ['slug' => 'browser-member-space'],
-            ['name' => 'مساحة اختبار المتصفح'],
-        );
-        $workspace->members()->syncWithoutDetaching([$member->id => ['role' => 'owner']]);
-        $workspace->projects()->firstOrCreate(
-            ['slug' => 'browser-first-project'],
-            ['name' => 'مشروع اختبار المتصفح'],
-        );
-        app(CreditLedger::class)->record($workspace, 'welcome:browser:'.$workspace->id, 'grant', 20, 'رصيد اختبار المتصفح');
+            $workspace = Workspace::query()->firstOrCreate(
+                ['slug' => $slug],
+                ['name' => 'مساحة اختبار المتصفح'],
+            );
+            $workspace->members()->syncWithoutDetaching([$member->id => ['role' => 'owner']]);
+            $workspace->projects()->firstOrCreate(
+                ['slug' => $slug.'-project'],
+                ['name' => 'مشروع اختبار المتصفح'],
+            );
+            app(CreditLedger::class)->record($workspace, 'welcome:browser:'.$workspace->id, 'grant', 20, 'رصيد اختبار المتصفح');
+        }
 
         User::query()->updateOrCreate(
             ['email' => self::ADMIN_EMAIL],

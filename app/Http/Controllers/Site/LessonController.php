@@ -217,9 +217,7 @@ class LessonController extends Controller
         $data = $request->validate(['title' => ['required', 'string', 'max:160'], 'type' => ['nullable', 'string', 'max:60'], 'markdown' => ['required', 'string', 'max:60000']]);
         $generated = session('lab.asset.'.$lesson->id);
         // Browsers submit hidden-field newlines as CRLF; keep the stored asset byte-identical to the generated one.
-        $data['markdown'] = str_replace("
-", "
-", $data['markdown']);
+        $data['markdown'] = str_replace("\r\n", "\n", $data['markdown']);
         $store->save($user, $project, $lesson, $data['title'], $data['type'] ?: ($lesson->outcome_type ?? 'asset'), $data['markdown'], session('lab.input.'.$lesson->id, []), $generated ? ['verdict' => $generated['verdict']] : null);
         $this->events->record($request, 'asset.saved', ['lesson_id' => $lesson->id, 'tool_id' => $lesson->lab_tool_id, 'part' => 'lab']);
         $this->progress->maybeComplete($user, $lesson);

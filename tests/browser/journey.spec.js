@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
-import { ADMIN, MEMBER, expectNoHorizontalOverflow, login, trackErrors } from './helpers.js';
+import { ADMIN, expectNoHorizontalOverflow, login, memberFor, trackErrors } from './helpers.js';
 
 /**
  * المرحلة 1 — الرحلة الكاملة (المخطط v1.3 §8): الرئيسية (النموذج) → التشخيص بثلاث مراحل → التسجيل →
@@ -87,10 +87,10 @@ test.describe('الرحلة الكاملة للشريحة العمودية', () 
         expect(errors).toEqual([]);
     });
 
-    test('عضو: تشخيص → درس كامل عن مشروعه → لوحتي وتقدمي', async ({ page }) => {
+    test('عضو: تشخيص → درس كامل عن مشروعه → لوحتي وتقدمي', async ({ page }, testInfo) => {
         test.setTimeout(240_000);
         const errors = trackErrors(page);
-        await login(page, MEMBER);
+        await login(page, memberFor(testInfo));
 
         // التشخيص كعضو يبني ملف المشروع.
         await page.goto('/assess');
