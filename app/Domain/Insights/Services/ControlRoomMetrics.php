@@ -18,7 +18,7 @@ class ControlRoomMetrics
     {
         $since = now()->subDays($days);
         $distinct = fn (array $events) => (int) LearnerEvent::query()->whereIn('event', $events)->where('created_at', '>=', $since)
-            ->selectRaw("count(distinct coalesce(cast(user_id as text), session_token)) as n")->value('n');
+            ->selectRaw("count(distinct coalesce(cast(user_id as char), session_token)) as n")->value('n');
         $counts = [
             'discover' => $distinct(['visit.home', 'assessment.completed', 'home.first_step']),
             'learn' => $distinct(['visit.lesson']),

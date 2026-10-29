@@ -60,10 +60,10 @@ class QualitySignalCalculator
     {
         $rows = LearnerEvent::query()->where('lesson_id', $lesson->id)->where('event', 'lesson.part_reached')
             ->when($since, fn ($q) => $q->where('created_at', '>=', $since))
-            ->selectRaw("part, count(distinct coalesce(cast(user_id as text), session_token)) as n")->groupBy('part')->pluck('n', 'part')->all();
+            ->selectRaw("part, count(distinct coalesce(cast(user_id as char), session_token)) as n")->groupBy('part')->pluck('n', 'part')->all();
         $started = LearnerEvent::query()->where('lesson_id', $lesson->id)->where('event', 'visit.lesson')
             ->when($since, fn ($q) => $q->where('created_at', '>=', $since))
-            ->selectRaw("count(distinct coalesce(cast(user_id as text), session_token)) as n")->value('n');
+            ->selectRaw("count(distinct coalesce(cast(user_id as char), session_token)) as n")->value('n');
         $reach = [];
         foreach (array_keys(Lesson::PARTS) as $part) {
             $n = (int) ($rows[$part] ?? 0);
@@ -137,9 +137,9 @@ class QualitySignalCalculator
         $min = $this->minSample();
         $signals = [];
         $generated = LearnerEvent::query()->where('event', 'lesson.lab_generated')->where('created_at', '>=', $since)->whereNotNull('lesson_id')
-            ->selectRaw("lesson_id, count(distinct coalesce(cast(user_id as text), session_token)) as n")->groupBy('lesson_id')->pluck('n', 'lesson_id');
+            ->selectRaw("lesson_id, count(distinct coalesce(cast(user_id as char), session_token)) as n")->groupBy('lesson_id')->pluck('n', 'lesson_id');
         $saved = LearnerEvent::query()->where('event', 'asset.saved')->where('created_at', '>=', $since)->whereNotNull('lesson_id')
-            ->selectRaw("lesson_id, count(distinct coalesce(cast(user_id as text), session_token)) as n")->groupBy('lesson_id')->pluck('n', 'lesson_id');
+            ->selectRaw("lesson_id, count(distinct coalesce(cast(user_id as char), session_token)) as n")->groupBy('lesson_id')->pluck('n', 'lesson_id');
         foreach ($generated as $lessonId => $n) {
             if ($n < $min) {
                 continue;
