@@ -61,3 +61,5 @@ Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')->name(
 Schedule::command('platform:backup')->dailyAt('03:10')->withoutOverlapping();
 Schedule::command('platform:compute-quality-signals')->hourly()->withoutOverlapping();
 Schedule::command('platform:send-checkin-reminders')->dailyAt('08:00')->withoutOverlapping();
+// المرحلة 3 (§6.3): capture gate — the 14 watched sources are polled once a day; unreachable feeds never fail the run.
+Schedule::command('platform:fetch-sources')->dailyAt('05:30')->withoutOverlapping();

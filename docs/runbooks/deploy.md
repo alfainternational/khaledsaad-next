@@ -22,6 +22,7 @@
 9. شغّل `php artisan queue:restart` وأعد تحميل PHP-FPM.
 10. افحص `/up` و`/` و`/sitemap.xml` وتسجيل الدخول وتشغيل الأداة المجانية.
 11. بعد المرحلة 2: افحص `/tools` (15 أداة بلا «قريباً»)، توليد زائر على `/tools/customer-persona?example=1`، حاسبة `/tools/calculators/cac`، المحاكي `/tools/simulator`، و`/admin/tools` بمعدل الحفظ.
+12. بعد المرحلة 3: افحص الأقسام الخمسة `/articles` و`/news` و`/insights` و`/case-studies` و`/research` (10 مواد لكل قسم على الأقل)، مادة بالشكل الكامل مثل `/articles/natural-skincare-store-true-cac` (في دقيقة، الفهرس، المصادر، طبّق ما قرأت)، القاموس `/glossary` و`/glossary/cac` (40 مصطلحاً)، موضوعاً `/topics/measurement-analytics-cro`، مؤلفاً `/authors/khaled-saad`، البحث المجمّع `/search?q=تكلفة اكتساب` (في الإنتاج يعمل بـFULLTEXT على MySQL)، اشتراك النشرة من التذييل ثم وصول بريد التأكيد (الطابور يُفرَّغ من المجدول كل دقيقة)، ثم `/admin/content` (المواد والتصنيفات والوسوم والمؤلفون) و`/admin/sources` (البوابات الخمس، 14 مصدراً، زر «اجلب المصادر الآن»)، و`sitemap.xml` يضم الأقسام والقاموس والمواضيع.
 
 ## الرجوع
 
@@ -46,7 +47,8 @@
 - المستودع يجب أن يكون متاحاً للقراءة لحظة الاستنساخ والتحديث؛ البديل الدائم: مفتاح SSH من cPanel → SSH Access يُضاف كـ Deploy Key في GitHub.
 - بلا Redis: الجلسات والكاش والطوابير على قاعدة البيانات، والطابور يُفرَّغ من المجدول كل دقيقة (`queue:work --stop-when-empty`).
 - فحص الجاهزية بعد النشر: `php artisan platform:doctor --env=production` من Terminal.
-- بذر المحتوى بالمراحل (مرة واحدة لكل مرحلة، بعلامة في `storage/app/`): `.seeded` (البذر الأساسي)، `.seeded-stage1` (الأكاديمية والتشخيص)، `.seeded-stage2` (المختبر: 15 أداة وأمثلتها عبر `LabSeeder`). `LabSeeder` idempotent (updateOrCreate بالـslug) فيمكن إعادته يدوياً لتحديث القوالب: `php artisan db:seed --class=LabSeeder --force`، مع ملاحظة أنه يعيد قالب الأداة إلى نسخة الكود (التعديلات اليدوية من استوديو الأداة تُحفظ في `tool_versions` ولا تُمس).
+- بذر المحتوى بالمراحل (مرة واحدة لكل مرحلة، بعلامة في `storage/app/`): `.seeded` (البذر الأساسي)، `.seeded-stage1` (الأكاديمية والتشخيص)، `.seeded-stage2` (المختبر: 15 أداة وأمثلتها عبر `LabSeeder`)، `.seeded-stage3` (المجلة: التصنيفات والوسوم والمؤلفون و14 مصدراً مراقباً و40 مصطلحاً و50 مادة من `database/content/` عبر `MagazineSeeder`). `LabSeeder` idempotent (updateOrCreate بالـslug) فيمكن إعادته يدوياً لتحديث القوالب: `php artisan db:seed --class=LabSeeder --force`، مع ملاحظة أنه يعيد قالب الأداة إلى نسخة الكود (التعديلات اليدوية من استوديو الأداة تُحفظ في `tool_versions` ولا تُمس). `MagazineSeeder` idempotent كذلك (`php artisan db:seed --class=MagazineSeeder --force`): يحدّث نص المواد المبذورة من ملفاتها ولا يخفض حالة مادة نشرها محرر، ويسند قسماً وتصنيفاً ومؤلفاً للمواد المستوردة القديمة بلا إعادة كتابتها.
+- جلب المصادر العالمية: `php artisan platform:fetch-sources` (مجدول يومياً 05:30؛ لا يفشل عند انقطاع الشبكة بل يسجّل الخطأ على المصدر في `/admin/sources`). الملخص بالذكاء الاصطناعي يعمل فقط عند وجود `OPENAI_API_KEY`، وإلا يعمل بالقواعد.
 
 ### ما تعلمناه من أول نشر فعلي (2026-10-28)
 - طابور مهام cPanel (الاستنساخ والنشر من واجهة Git) قد يعلق؛ البديل المعتمد هو `deploy/cpanel-bootstrap.sh` من Terminal.

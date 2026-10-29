@@ -37,5 +37,6 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('events', fn (Request $request) => Limit::perMinute(120)->by((string) ($request->user()?->id ?? $request->ip())));
         RateLimiter::for('reports', fn (Request $request) => Limit::perMinute(5)->by((string) ($request->user()?->id ?? $request->ip())));
         RateLimiter::for('checkout', fn (Request $request) => Limit::perMinute(5)->by((string) ($request->user()?->id ?? $request->ip())));
+        RateLimiter::for('newsletter', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
     }
 }

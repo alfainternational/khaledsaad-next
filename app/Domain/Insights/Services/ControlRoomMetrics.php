@@ -58,6 +58,7 @@ class ControlRoomMetrics
                 'lesson' => route('admin.academy.lessons.edit', ['lesson' => $s->entity_id, 'part' => $s->part]),
                 'question' => route('admin.academy.lessons.edit', ['lesson' => $s->meta['lesson_id'] ?? 0, 'part' => 'questions']).'#question-'.$s->entity_id,
                 'tool' => route('tools.index'),
+                'content' => route('admin.content.edit', ['contentItem' => $s->entity_id]).'#sources-fieldset',
                 default => route('admin.index'),
             });
 

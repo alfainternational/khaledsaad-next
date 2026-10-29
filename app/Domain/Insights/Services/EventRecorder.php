@@ -16,6 +16,7 @@ class EventRecorder
         'lesson.whatif_used', 'asset.saved', 'asset.copied', 'asset.downloaded', 'question.answered', 'template.downloaded',
         'assessment.started', 'assessment.completed', 'checkin.committed', 'checkin.recorded', 'coach.asked', 'report.sent', 'lesson.completed',
         'home.first_step', 'visit.tool', 'tool.generated', 'tool.enhanced', 'asset.shared', 'calculator.used', 'simulator.used',
+        'visit.article',
     ];
 
     public static function sessionToken(Request $request): string

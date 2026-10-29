@@ -92,6 +92,12 @@ if [ ! -f storage/app/.seeded-stage2 ]; then
     echo "==> Importing stage-2 lab content (once)"
     "$PHP" artisan db:seed --class=LabSeeder --force --no-interaction && touch storage/app/.seeded-stage2
 fi
+# Stage-3 magazine content (categories, tags, authors, 14 watched feeds, 40 glossary terms, 50 items from database/content) is
+# imported once; existing production rows keep their text and only gain a section/category/author. Later edits live in /admin/content.
+if [ ! -f storage/app/.seeded-stage3 ]; then
+    echo "==> Importing stage-3 magazine content (once)"
+    "$PHP" artisan db:seed --class=MagazineSeeder --force --no-interaction && touch storage/app/.seeded-stage3
+fi
 "$PHP" artisan storage:link >/dev/null 2>&1 || true
 echo "==> Caching"
 "$PHP" artisan optimize:clear >/dev/null

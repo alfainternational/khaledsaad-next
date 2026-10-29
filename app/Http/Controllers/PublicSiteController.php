@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Academy\Models\Course;
+use App\Domain\Content\Models\Author;
 use App\Domain\Content\Models\ContentItem;
+use App\Domain\Content\Models\GlossaryTerm;
+use App\Domain\Content\Models\Tag;
 use App\Domain\Lab\Models\Tool;
-use Illuminate\Http\Request;
+use App\Support\Markdown;
 use Illuminate\Support\Facades\DB;
 
+/** Discovery endpoints (sitemap, feed) and the pages that pre-date the stage controllers. The magazine lives in Site\MagazineController. */
 class PublicSiteController extends Controller
 {
     public function home()
@@ -16,50 +20,6 @@ class PublicSiteController extends Controller
             'articles' => ContentItem::published()->latest('published_at')->limit(3)->get(),
             'courses' => Course::query()->where('is_published', true)->limit(3)->get(),
             'tools' => Tool::query()->where('is_published', true)->limit(3)->get(),
-        ]);
-    }
-
-    public function articles(Request $request)
-    {
-        $query = ContentItem::published()->latest('published_at');
-        if ($request->filled('type')) {
-            $query->where('type', $request->string('type'));
-        }
-
-        return view('site.articles.index', ['articles' => $query->paginate(12)]);
-    }
-
-    public function article(ContentItem $contentItem)
-    {
-        abort_unless($contentItem->status === 'published' && $contentItem->published_at?->lte(now()), 404);
-        $contentItem->load('sources');
-
-        $structuredData = [
-            '@context' => 'https://schema.org',
-            '@type' => $contentItem->type === 'news' ? 'NewsArticle' : 'Article',
-            'headline' => $contentItem->title,
-            'description' => $contentItem->excerpt,
-            'datePublished' => $contentItem->published_at?->toIso8601String(),
-            'dateModified' => $contentItem->updated_at?->toIso8601String(),
-            'author' => ['@type' => 'Person', 'name' => $contentItem->author_name],
-            'publisher' => ['@type' => 'Organization', 'name' => 'أثر', 'url' => url('/')],
-            'mainEntityOfPage' => route('articles.show', $contentItem),
-        ];
-
-        return view('site.articles.show', [
-            'article' => $contentItem,
-            'structuredJson' => json_encode(
-                $structuredData,
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
-            ),
-        ]);
-    }
-
-    public function insights()
-    {
-        return view('site.articles.index', [
-            'articles' => ContentItem::published()->whereIn('type', ['translated_analysis', 'news'])->latest('published_at')->paginate(12),
-            'insights' => true,
         ]);
     }
 
@@ -119,28 +79,26 @@ class PublicSiteController extends Controller
         return view('site.tools.show', compact('tool'));
     }
 
-    public function search(Request $request)
-    {
-        $term = trim((string) $request->query('q'));
-        $results = ContentItem::published()
-            ->when($term !== '', fn ($query) => $query->where(fn ($q) => $q->where('title', 'like', "%{$term}%")->orWhere('excerpt', 'like', "%{$term}%")))
-            ->limit(20)->get();
-
-        return view('site.search', compact('term', 'results'));
-    }
-
     public function sitemap()
     {
+        $tagCounts = DB::table('content_tag')->join('content_items', 'content_items.id', '=', 'content_tag.content_item_id')
+            ->where('content_items.status', 'published')->selectRaw('tag_id, count(*) as n')->groupBy('tag_id')->pluck('n', 'tag_id');
+
         return response()->view('site.sitemap', [
             'articles' => ContentItem::published()->get(),
             'courses' => Course::query()->where('is_published', true)->with('lessons')->get(),
-            'tools' => Tool::query()->where('is_published', true)->get(),
+            'topics' => Course::query()->orderBy('position')->get(),
+            'tools' => Tool::query()->where('is_published', true)->where('slug', '!=', 'lesson-lab')->get(),
+            'terms' => GlossaryTerm::published()->get(),
+            'authors' => Author::query()->get(),
+            // Tags with fewer than three items are noindex (§4.10), so they stay out of the sitemap too.
+            'tags' => Tag::query()->whereIn('id', $tagCounts->filter(fn ($n) => $n >= 3)->keys())->get(),
         ])->header('Content-Type', 'application/xml');
     }
 
     public function feed()
     {
-        return response()->view('site.feed', ['articles' => ContentItem::published()->latest('published_at')->limit(20)->get()])
+        return response()->view('site.feed', ['articles' => ContentItem::published()->with('author')->latest('published_at')->limit(20)->get()])
             ->header('Content-Type', 'application/rss+xml; charset=UTF-8');
     }
 }

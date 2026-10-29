@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\ControlRoomController;
 use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\SourcesController;
+use App\Http\Controllers\Admin\TaxonomyController;
 use App\Http\Controllers\Admin\ToolStudioController;
 use App\Http\Controllers\App\BillingController;
 use App\Http\Controllers\App\DashboardController;
@@ -22,13 +24,32 @@ use App\Http\Controllers\Site\EventController;
 use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\LabController;
 use App\Http\Controllers\Site\LessonController;
+use App\Http\Controllers\Site\MagazineController;
+use App\Http\Controllers\Site\NewsletterController;
+use App\Http\Controllers\Site\SearchController;
 use App\Http\Controllers\Webhooks\PayPalWebhookController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
-Route::get('/articles', [PublicSiteController::class, 'articles'])->name('articles.index');
-Route::get('/articles/{contentItem}', [PublicSiteController::class, 'article'])->name('articles.show');
-Route::get('/insights', [PublicSiteController::class, 'insights'])->name('insights.index');
+
+// المجلة (§4.10–4.11): الأقسام الخمسة، المادة، القاموس، المواضيع (= المسارات)، الوسوم، المؤلفون.
+Route::get('/articles', [MagazineController::class, 'index'])->name('articles.index');
+Route::get('/articles/{contentItem}', [MagazineController::class, 'show'])->name('articles.show');
+Route::post('/articles/{contentItem}/report', [MagazineController::class, 'report'])->middleware('throttle:reports')->name('articles.report');
+Route::get('/insights', fn (Request $request) => app(MagazineController::class)->section($request, 'insights'))->name('insights.index');
+Route::get('/news', fn (Request $request) => app(MagazineController::class)->section($request, 'news'))->name('news.index');
+Route::get('/case-studies', fn (Request $request) => app(MagazineController::class)->section($request, 'case-studies'))->name('case-studies.index');
+Route::get('/research', fn (Request $request) => app(MagazineController::class)->section($request, 'research'))->name('research.index');
+Route::get('/glossary', [MagazineController::class, 'glossary'])->name('glossary.index');
+Route::get('/glossary/{term}', [MagazineController::class, 'term'])->name('glossary.show');
+Route::get('/topics/{topic}', [MagazineController::class, 'topic'])->name('topics.show');
+Route::get('/tags/{tag}', [MagazineController::class, 'tag'])->name('tags.show');
+Route::get('/authors/{author}', [MagazineController::class, 'author'])->name('authors.show');
+// النشرة البريدية (§3.2): مزدوجة الموافقة.
+Route::post('/newsletter', [NewsletterController::class, 'store'])->middleware('throttle:newsletter')->name('newsletter.store');
+Route::get('/newsletter/confirm/{token}', [NewsletterController::class, 'confirm'])->name('newsletter.confirm');
+Route::get('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 
 // تشخيص مشروعك (§4.2)
 Route::get('/assess', [AssessController::class, 'start'])->name('assess.start');
@@ -59,7 +80,7 @@ Route::post('/tools/{tool}/generate', [LabController::class, 'generate'])->middl
 Route::get('/a/{token}', [LabController::class, 'shared'])->name('assets.shared');
 Route::get('/resources', [PublicSiteController::class, 'resources'])->name('resources');
 Route::view('/about', 'site.about')->name('about');
-Route::get('/search', [PublicSiteController::class, 'search'])->middleware('throttle:search')->name('search');
+Route::get('/search', SearchController::class)->middleware('throttle:search')->name('search');
 Route::get('/sitemap.xml', [PublicSiteController::class, 'sitemap'])->name('sitemap');
 Route::get('/feed.xml', [PublicSiteController::class, 'feed'])->name('feed');
 Route::get('/llms.txt', fn () => response()->view('site.llms')->header('Content-Type', 'text/plain; charset=utf-8'))->name('llms');
@@ -126,10 +147,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/admin/assessment/questions/{question}', [AdminAssessmentController::class, 'destroyQuestion'])->name('admin.assessment.questions.destroy');
     Route::post('/admin/assessment/rules', [AdminAssessmentController::class, 'saveRule'])->name('admin.assessment.rules.save');
 
+    // إدارة المحتوى الموسعة (§6.5): المواد والتصنيفات والوسوم والمؤلفون بجداول قياسية، وكل تغيير في التدقيق.
     Route::get('/admin/content', [AdminContentController::class, 'index'])->name('admin.content.index');
+    Route::get('/admin/content/create', [AdminContentController::class, 'create'])->name('admin.content.create');
+    Route::post('/admin/content', [AdminContentController::class, 'store'])->name('admin.content.store');
+    Route::get('/admin/content/{kind}', [TaxonomyController::class, 'index'])->whereIn('kind', ['categories', 'tags', 'authors'])->name('admin.content.taxonomy');
+    Route::post('/admin/content/{kind}', [TaxonomyController::class, 'store'])->whereIn('kind', ['categories', 'tags', 'authors'])->name('admin.content.taxonomy.store');
+    Route::put('/admin/content/{kind}/{id}', [TaxonomyController::class, 'update'])->whereIn('kind', ['categories', 'tags', 'authors'])->whereNumber('id')->name('admin.content.taxonomy.update');
+    Route::delete('/admin/content/{kind}/{id}', [TaxonomyController::class, 'destroy'])->whereIn('kind', ['categories', 'tags', 'authors'])->whereNumber('id')->name('admin.content.taxonomy.destroy');
     Route::get('/admin/content/{contentItem:id}/edit', [AdminContentController::class, 'edit'])->name('admin.content.edit');
     Route::put('/admin/content/{contentItem:id}', [AdminContentController::class, 'update'])->name('admin.content.update');
+    Route::delete('/admin/content/{contentItem:id}', [AdminContentController::class, 'destroy'])->name('admin.content.destroy');
     Route::post('/admin/content/{contentItem:id}/publish', [AdminContentController::class, 'publish'])->name('admin.content.publish');
+    Route::post('/admin/content/{contentItem:id}/clean', [AdminContentController::class, 'clean'])->name('admin.content.clean');
+    // من المصادر إلى الرؤى (§6.3): لوح البوابات الخمس.
+    Route::get('/admin/sources', [SourcesController::class, 'index'])->name('admin.sources.index');
+    Route::post('/admin/sources/fetch', [SourcesController::class, 'fetch'])->name('admin.sources.fetch');
+    Route::post('/admin/sources/items', [SourcesController::class, 'store'])->name('admin.sources.store');
+    Route::get('/admin/sources/items/{item}', [SourcesController::class, 'show'])->name('admin.sources.show');
+    Route::post('/admin/sources/items/{item}/verify', [SourcesController::class, 'verify'])->name('admin.sources.verify');
+    Route::post('/admin/sources/items/{item}/summarize', [SourcesController::class, 'summarize'])->middleware('throttle:ai')->name('admin.sources.summarize');
+    Route::post('/admin/sources/items/{item}/contextualize', [SourcesController::class, 'contextualize'])->name('admin.sources.contextualize');
+    Route::post('/admin/sources/items/{item}/review', [SourcesController::class, 'review'])->name('admin.sources.review');
+    Route::post('/admin/sources/items/{item}/ignore', [SourcesController::class, 'ignore'])->name('admin.sources.ignore');
+    Route::patch('/admin/sources/feeds/{feed}', [SourcesController::class, 'toggleFeed'])->name('admin.sources.feeds.toggle');
     Route::get('/admin/operations', [OperationsController::class, 'index'])->name('admin.operations');
     Route::post('/admin/redirects', [OperationsController::class, 'storeRedirect'])->name('admin.redirects.store');
     Route::delete('/admin/redirects/{redirect}', [OperationsController::class, 'destroyRedirect'])->name('admin.redirects.destroy');

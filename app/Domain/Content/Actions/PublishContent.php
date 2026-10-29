@@ -18,7 +18,7 @@ class PublishContent
                 throw new DomainException('يجب أن تمر المادة بالمراجعة التحريرية قبل النشر.');
             }
 
-            if (in_array($locked->type, ['translated_analysis', 'news'], true)) {
+            if ($locked->requiresSources()) {
                 if (! $locked->source_mode || $locked->sources->isEmpty()) {
                     throw new DomainException('المادة العالمية تتطلب مصدراً وطريقة معالجة واضحة.');
                 }
@@ -42,7 +42,12 @@ class PublishContent
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            $locked->update(['status' => 'published', 'published_at' => $locked->published_at ?? now()]);
+            $locked->update([
+                'status' => 'published',
+                'published_at' => $locked->published_at ?? now(),
+                'translation_stage' => 'published',
+                'last_reviewed_at' => $locked->last_reviewed_at ?? $locked->reviewed_at ?? now(),
+            ]);
             DB::table('audit_logs')->insert([
                 'user_id' => $actorId,
                 'action' => 'content.published',

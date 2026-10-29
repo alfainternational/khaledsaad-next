@@ -65,5 +65,7 @@ class DatabaseSeeder extends Seeder
 
         // المرحلة 2: المختبر (15 أداة، إصدار القالب الأول، 3 أمثلة مجهولة لكل مولّد).
         $this->call(LabSeeder::class);
+        // المرحلة 3: المجلة (التصنيفات والوسوم والمؤلفون والمصادر المراقبة، 40 مصطلحاً و50 مادة من database/content).
+        $this->call(MagazineSeeder::class);
     }
 }

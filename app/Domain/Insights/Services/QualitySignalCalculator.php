@@ -4,6 +4,7 @@ namespace App\Domain\Insights\Services;
 
 use App\Domain\Academy\Models\Lesson;
 use App\Domain\Academy\Models\Question;
+use App\Domain\Content\Models\ContentItem;
 use App\Domain\Insights\Models\LearnerEvent;
 use App\Domain\Insights\Models\QualitySignal;
 use App\Domain\Lab\Models\Tool;
@@ -30,6 +31,7 @@ class QualitySignalCalculator
         $found = array_merge($found, $this->lessonDropoffs($since));
         $found = array_merge($found, $this->wrongMajorityQuestions($since));
         $found = array_merge($found, $this->unsavedLabs($since));
+        $found = array_merge($found, $this->staleSources($since));
 
         $keys = [];
         foreach ($found as $signal) {
@@ -125,6 +127,45 @@ class QualitySignalCalculator
                     'value' => round($wrong / $byLearner->count() * 100, 2), 'impact' => $wrong,
                     'summary' => 'سؤال قرار يُخطئ فيه الأغلبية ('.round($wrong / $byLearner->count() * 100).'٪) في درس «'.($question->lesson?->title ?? '').'».',
                     'meta' => ['lesson_id' => $question->lesson_id, 'wrong' => $wrong, 'total' => $byLearner->count()],
+                ];
+            }
+        }
+
+        return $signals;
+    }
+
+    /**
+     * §6.1 row 3 / §6.3 — two content signals. Impact = distinct visitors of the item in the window, so a stale
+     * article nobody reads ranks below a lesson that leaks learners today:
+     *  - stale_sources: a published global item whose numbers rest on sources older than twelve months;
+     *  - article_without_tool: an item that draws visitors (≥ min sample) but links no lab tool.
+     */
+    private function staleSources($since = null): array
+    {
+        $visits = LearnerEvent::query()->where('event', 'visit.article')
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))
+            ->get(['user_id', 'session_token', 'meta'])
+            ->groupBy(fn ($e) => (int) ($e->meta['content_item_id'] ?? 0))
+            ->map(fn ($events) => $events->groupBy(fn ($e) => $e->user_id ? 'u'.$e->user_id : 's'.$e->session_token)->count());
+        $signals = [];
+        foreach (ContentItem::published()->with('sources')->get() as $item) {
+            $readers = (int) ($visits[$item->id] ?? 0);
+            if ($item->hasStaleSources()) {
+                $oldest = $item->oldestSourceDate();
+                $months = (int) $oldest->diffInMonths(now());
+                $signals[] = [
+                    'type' => 'stale_sources', 'entity_type' => 'content', 'entity_id' => $item->id, 'part' => 'sources',
+                    'value' => $months, 'impact' => $readers,
+                    'summary' => 'مادة «'.$item->title.'» تعتمد أرقاماً من مصدر عمره '.$months.' شهراً؛ تحتاج تحديثاً.',
+                    'meta' => ['oldest_source' => $oldest->toDateString(), 'section' => $item->section, 'readers' => $readers],
+                ];
+            }
+            if (! $item->related_tool_id && $readers >= $this->minSample()) {
+                $signals[] = [
+                    'type' => 'article_without_tool', 'entity_type' => 'content', 'entity_id' => $item->id, 'part' => 'tool',
+                    'value' => $readers, 'impact' => $readers,
+                    'summary' => 'مادة «'.$item->title.'» تجلب '.$readers.' زائراً بلا أداة مرتبطة.',
+                    'meta' => ['section' => $item->section, 'readers' => $readers],
                 ];
             }
         }

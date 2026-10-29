@@ -60,10 +60,13 @@
 <footer class="site-footer"><div class="shell"><div class="footer-grid">
     <div><a class="brand brand-light" href="{{ route('home') }}"><span class="brand-mark">أ</span><span>أثر</span></a><p>منصة تعلّم بالممارسة للتسويق والذكاء الاصطناعي: كل درس ينتهي بأصل لمشروعك، وكل أصل يُقاس في الواقع.</p><p><strong>تعلّم. طبّق. قِس الأثر.</strong></p></div>
     <div><h2>تعلّم</h2><a href="{{ route('academy.index') }}#program-owner">برنامج أصحاب المشاريع</a><a href="{{ route('academy.index') }}#program-marketer">برنامج المسوّقين</a><a href="{{ route('academy.index') }}">الأكاديمية</a><a href="{{ route('assess.start') }}">شخّص مشروعك</a></div>
-    <div><h2>طبّق</h2><a href="{{ route('tools.index') }}">المختبر</a><a href="{{ route('resources') }}">الموارد والقوالب</a><a href="{{ route('articles.index') }}">المجلة</a><a href="{{ route('insights.index') }}">الرؤى العالمية</a></div>
+    <div><h2>طبّق</h2><a href="{{ route('tools.index') }}">المختبر</a><a href="{{ route('resources') }}">الموارد والقوالب</a><a href="{{ route('glossary.index') }}">القاموس</a><a href="{{ route('articles.index') }}">المجلة</a><a href="{{ route('insights.index') }}">الرؤى العالمية</a><a href="{{ route('news.index') }}">الأخبار</a><a href="{{ route('case-studies.index') }}">دراسات الحالة</a><a href="{{ route('research.index') }}">الأبحاث</a></div>
     <div><h2>المنصة</h2><a href="{{ route('about') }}">عن أثر</a><a href="{{ route('app.billing') }}">التسعير</a><a href="mailto:{{ config('platform.support_email') }}">الاتصال</a><a href="{{ route('about') }}#privacy">الخصوصية</a><a href="{{ route('about') }}#terms">الشروط</a><a href="{{ route('feed') }}">RSS</a><a href="{{ route('llms') }}">llms.txt</a></div>
 </div>
-<form class="newsletter" action="{{ route('search') }}" method="get" data-newsletter><label class="sr-only" for="footer-email">البريد الإلكتروني للنشرة</label><input id="footer-email" type="email" placeholder="بريدك لنشرة أسبوعية: فكرة، تطبيق، أداة" autocomplete="email"><button class="btn btn-primary" type="button">انضم</button></form>
+<div class="newsletter-wrap" id="newsletter">
+<form class="newsletter" action="{{ route('newsletter.store') }}" method="post" data-newsletter>@csrf<label class="sr-only" for="footer-email">البريد الإلكتروني للنشرة</label><input id="footer-email" name="email" type="email" placeholder="بريدك لنشرة أسبوعية: فكرة، تطبيق، أداة" autocomplete="email" required><input class="sr-only" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn btn-primary" type="submit">انضم</button></form>
+<p class="newsletter-status" data-newsletter-status role="status" @if(! session('newsletter') && ! $errors->has('email')) hidden @endif>{{ session('newsletter') ?: $errors->first('email') }}</p>
+</div>
 <div class="footer-bottom"><span>© {{ date('Y') }} أثر — خالد سعد</span><span>محتوى عربي أصيل ومصادر عالمية مُراجعة.</span></div></div></footer>
 <script nonce="{{ $cspNonce }}">
 (function(){
@@ -78,7 +81,10 @@
   so&&so.addEventListener('click',function(){sl.hidden=false;sl.classList.add('is-open');so.setAttribute('aria-expanded','true');sl.querySelector('input').focus()});
   sc&&sc.addEventListener('click',closeS);sl&&sl.addEventListener('click',function(e){if(e.target===sl)closeS()});
   d.addEventListener('keydown',function(e){if(e.key==='Escape'&&sl&&!sl.hidden)closeS()});
-  var nl=d.querySelector('[data-newsletter]');nl&&nl.addEventListener('submit',function(e){e.preventDefault()});
+  var nl=d.querySelector('[data-newsletter]'),ns=d.querySelector('[data-newsletter-status]');
+  var nlFallback=false;
+  nl&&nl.addEventListener('submit',function(e){if(!window.fetch||nlFallback)return;e.preventDefault();var btn=nl.querySelector('button');btn.disabled=true;
+    fetch(nl.action,{method:'POST',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:new FormData(nl)}).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})}).then(function(x){ns.hidden=false;ns.textContent=x.ok?x.j.message:(x.j.message||(x.j.errors&&x.j.errors.email&&x.j.errors.email[0])||'تعذر الاشتراك الآن.');ns.classList.toggle('is-error',!x.ok);if(x.ok)nl.reset()}).catch(function(){nlFallback=true;nl.submit()}).finally(function(){btn.disabled=false})});
   d.addEventListener('click',function(e){d.querySelectorAll('details.account-menu[open]').forEach(function(m){if(!m.contains(e.target))m.removeAttribute('open')})});
   window.atharEvent=function(name,meta){try{var b=new Blob([JSON.stringify({event:name,meta:meta||{},_token:d.querySelector('meta[name=csrf-token]').content})],{type:'application/json'});if(navigator.sendBeacon){navigator.sendBeacon('{{ route('events.store') }}',b)}else{fetch('{{ route('events.store') }}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':d.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({event:name,meta:meta||{}}),keepalive:true})}}catch(e){}};
 })();
