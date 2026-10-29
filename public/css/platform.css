@@ -216,6 +216,8 @@ a.card:hover,.card.is-link:hover{border-color:var(--orange);text-decoration:none
 .impact-line{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:18px}.impact-line b{font-size:28px;color:var(--orange)}.impact-line .q{font-size:28px;color:var(--muted)}
 .result-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:32px;align-items:start}
 .side{position:sticky;top:calc(var(--header-h) + 16px)}
+/* A gate inside the 320px side column stacks: its text column must not shrink to one letter per line beside the button. */
+.side .gate{grid-template-columns:1fr;padding:20px}.side .gate .btn{justify-self:stretch;text-align:center}
 
 /* ---------- الأكاديمية ---------- */
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
