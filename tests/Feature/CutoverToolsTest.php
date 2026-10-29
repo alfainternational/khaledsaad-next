@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Content\Models\ContentItem;
+use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -62,7 +63,9 @@ class CutoverToolsTest extends TestCase
         $this->assertDatabaseHas('redirects', ['from_path' => '/download/android', 'status_code' => 410]);
         $this->assertDatabaseMissing('redirects', ['from_path' => '/evil']);
 
-        $this->get('/pricing')->assertRedirect('/register');
+        $this->get('/pricing')->assertOk()->assertSee('مقارنة الخطط');
+        $this->head('/pricing')->assertOk();
+        $this->get('/blog')->assertRedirect('/articles');
         $this->get('/download/android')->assertStatus(410);
         unlink($csv);
     }
@@ -78,6 +81,8 @@ class CutoverToolsTest extends TestCase
             $status = $this->get($target)->getStatusCode();
             $this->assertContains($status, [200, 302], "redirect target {$target} answered {$status}");
         }
+        $this->get('/profile')->assertRedirect('/login');
+        $this->actingAs(User::factory()->create())->get('/profile')->assertOk()->assertSee('id="send-verification"', false);
     }
 
     public function test_legacy_articles_import_as_drafts_with_arabic_slug_redirects(): void

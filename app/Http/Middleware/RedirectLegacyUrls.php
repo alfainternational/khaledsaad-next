@@ -19,6 +19,11 @@ class RedirectLegacyUrls
         // Legacy slugs are Arabic; stored decoded, so decode the incoming path before matching.
         $path = '/'.ltrim(rawurldecode($request->path()), '/');
 
+        // Current pricing and account pages take precedence over mappings imported from the old site.
+        if (in_array($path, ['/pricing', '/profile'], true)) {
+            return $next($request);
+        }
+
         try {
             $redirect = DB::table('redirects')
                 ->where('from_path', $path)
