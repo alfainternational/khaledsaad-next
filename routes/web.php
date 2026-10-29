@@ -6,12 +6,13 @@ use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\ControlRoomController;
 use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\ToolStudioController;
 use App\Http\Controllers\App\BillingController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\LessonCompletionController;
+use App\Http\Controllers\App\OutputController;
 use App\Http\Controllers\App\ProjectController;
 use App\Http\Controllers\App\ToolRunController;
-use App\Http\Controllers\App\ToolRunOutputController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\Site\AcademyController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Site\AssessController;
 use App\Http\Controllers\Site\AssetController;
 use App\Http\Controllers\Site\EventController;
 use App\Http\Controllers\Site\HomeController;
+use App\Http\Controllers\Site\LabController;
 use App\Http\Controllers\Site\LessonController;
 use App\Http\Controllers\Webhooks\PayPalWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -48,8 +50,13 @@ Route::get('/resources/{template}/download', [AcademyController::class, 'templat
 Route::post('/assets/print', [AssetController::class, 'print'])->name('assets.print');
 Route::post('/events', [EventController::class, 'store'])->middleware('throttle:events')->name('events.store');
 
-Route::get('/tools', [PublicSiteController::class, 'tools'])->name('tools.index');
-Route::get('/tools/{tool}', [PublicSiteController::class, 'tool'])->name('tools.show');
+// المختبر (§4.6–4.8): المولدات تعمل للزائر بلا AI؛ الحاسبات والمحاكي مجانية؛ /a/{token} صفحة قراءة عامة لأصل مشترك.
+Route::get('/tools', [LabController::class, 'index'])->name('tools.index');
+Route::get('/tools/calculators/{calc}', [LabController::class, 'calculator'])->name('tools.calculator');
+Route::get('/tools/simulator', [LabController::class, 'simulator'])->name('tools.simulator');
+Route::get('/tools/{tool}', [LabController::class, 'show'])->name('tools.show');
+Route::post('/tools/{tool}/generate', [LabController::class, 'generate'])->middleware('throttle:events')->name('tools.generate');
+Route::get('/a/{token}', [LabController::class, 'shared'])->name('assets.shared');
 Route::get('/resources', [PublicSiteController::class, 'resources'])->name('resources');
 Route::view('/about', 'site.about')->name('about');
 Route::get('/search', [PublicSiteController::class, 'search'])->middleware('throttle:search')->name('search');
@@ -92,8 +99,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/app/billing/orders', [BillingController::class, 'storeOrder'])->middleware('throttle:checkout')->name('app.billing.orders.store');
     Route::get('/app/billing/paypal/return', [BillingController::class, 'paypalReturn'])->name('app.billing.paypal.return');
     Route::get('/app/billing/paypal/cancel', [BillingController::class, 'paypalCancel'])->name('app.billing.paypal.cancel');
+    Route::get('/app/projects/{project}/plan', [ProjectController::class, 'plan'])->name('app.projects.plan');
     Route::post('/app/tools/{tool}/run', [ToolRunController::class, 'store'])->middleware('throttle:ai')->name('app.tools.run');
-    Route::delete('/app/tool-runs/{toolRun}', [ToolRunOutputController::class, 'destroy'])->name('app.tool-runs.destroy');
+    Route::post('/app/tools/{tool}/save', [OutputController::class, 'store'])->name('app.tools.save');
+    // أصولي (§5.3) والمشاركة برابط (§4.7)
+    Route::get('/app/outputs', [OutputController::class, 'index'])->name('app.outputs.index');
+    Route::get('/app/outputs/{output}', [OutputController::class, 'show'])->name('app.outputs.show');
+    Route::delete('/app/outputs/{output}', [OutputController::class, 'destroy'])->name('app.outputs.destroy');
+    Route::post('/app/outputs/{output}/share', [OutputController::class, 'share'])->name('app.outputs.share');
+    Route::delete('/app/outputs/{output}/share', [OutputController::class, 'unshare'])->name('app.outputs.unshare');
 
     // غرفة التحكم (§6.1) والاستوديو (§6.2) وإدارة الاختبار (§6.5)
     Route::get('/admin', [ControlRoomController::class, 'index'])->name('admin.index');
@@ -120,6 +134,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/admin/redirects', [OperationsController::class, 'storeRedirect'])->name('admin.redirects.store');
     Route::delete('/admin/redirects/{redirect}', [OperationsController::class, 'destroyRedirect'])->name('admin.redirects.destroy');
     Route::patch('/admin/plans/{plan}', [PlanController::class, 'update'])->name('admin.plans.update');
+
+    // استوديو الأداة (§6.4)
+    Route::get('/admin/tools', [ToolStudioController::class, 'index'])->name('admin.tools.index');
+    Route::get('/admin/tools/{tool:id}', [ToolStudioController::class, 'show'])->name('admin.tools.show');
+    Route::put('/admin/tools/{tool:id}', [ToolStudioController::class, 'update'])->name('admin.tools.update');
+    Route::post('/admin/tools/{tool:id}/versions', [ToolStudioController::class, 'storeVersion'])->name('admin.tools.versions.store');
+    Route::post('/admin/tools/{tool:id}/versions/{version}/activate', [ToolStudioController::class, 'activateVersion'])->name('admin.tools.versions.activate');
+    Route::post('/admin/tools/{tool:id}/test', [ToolStudioController::class, 'test'])->name('admin.tools.test');
+    Route::post('/admin/tools/{tool:id}/experiment', [ToolStudioController::class, 'startExperiment'])->name('admin.tools.experiment.start');
+    Route::post('/admin/tools/{tool:id}/experiment/{experiment}/end', [ToolStudioController::class, 'endExperiment'])->name('admin.tools.experiment.end');
 });
 
 require __DIR__.'/auth.php';

@@ -54,10 +54,11 @@ class HomeController extends Controller
     /** Real numbers from the database; a cell is hidden when its number is below 10 (blueprint §4.1 row 2). */
     private function liveNumbers(AssessmentEngine $engine): array
     {
-        $assetsWeek = ToolOutput::query()->where('created_at', '>=', now()->subDays(7))->count();
+        // Live numbers count learners' assets only, never the seeded illustrative examples of the lab.
+        $assetsWeek = ToolOutput::query()->where('created_at', '>=', now()->subDays(7))->where('payload', 'not like', '%"illustrative":true%')->count();
         $results = DB::table('real_world_checkins')->whereNotNull('recorded_at')->count();
         $improvement = $engine->averageImprovement();
-        $last = ToolOutput::query()->whereNotNull('output_type')->latest()->first();
+        $last = ToolOutput::query()->whereNotNull('output_type')->where('payload', 'not like', '%"illustrative":true%')->latest()->first();
         $lastProject = $last?->project_id ? DB::table('projects')->where('id', $last->project_id)->value('profile') : null;
         $profile = $lastProject ? (json_decode($lastProject, true) ?: []) : [];
         $typeLabels = ['value_card' => 'بطاقة قيمة', 'market_map' => 'خريطة سوق', 'segment_profile' => 'ملف شريحة', 'core_message' => 'رسالة أساسية', 'channel_plan' => 'خطة قناة', 'marketing_plan' => 'خطة تسويق'];

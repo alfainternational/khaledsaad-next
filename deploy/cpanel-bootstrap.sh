@@ -86,6 +86,12 @@ if [ ! -f storage/app/.seeded-stage1 ]; then
     echo "==> Importing stage-1 content (once)"
     "$PHP" artisan db:seed --class=AcademySeeder --force --no-interaction         && "$PHP" artisan db:seed --class=AssessmentSeeder --force --no-interaction         && touch storage/app/.seeded-stage1
 fi
+# Stage-2 lab content (15 tools with templates, chain and three illustrative examples each) is imported once;
+# the studio owns later template changes as versions, so LabSeeder never runs again automatically.
+if [ ! -f storage/app/.seeded-stage2 ]; then
+    echo "==> Importing stage-2 lab content (once)"
+    "$PHP" artisan db:seed --class=LabSeeder --force --no-interaction && touch storage/app/.seeded-stage2
+fi
 "$PHP" artisan storage:link >/dev/null 2>&1 || true
 echo "==> Caching"
 "$PHP" artisan optimize:clear >/dev/null

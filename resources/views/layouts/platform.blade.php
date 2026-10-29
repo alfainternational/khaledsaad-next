@@ -44,7 +44,8 @@
         @if($viewer->isMember())
             <a class="btn btn-secondary nav-cta" href="{{ route('dashboard') }}">لوحتي</a>
             <details class="account-menu"><summary aria-label="قائمة الحساب"><span class="initial" aria-hidden="true">{{ mb_substr($viewer->user()->name, 0, 1) }}</span><span class="name">{{ Str::limit($viewer->user()->name, 18) }} ▾</span></summary><div class="menu">
-                <a href="{{ route('dashboard') }}">لوحتي</a><a href="{{ route('app.progress') }}">تقدمي</a><a href="{{ route('profile.edit') }}">الحساب</a><a href="{{ route('app.billing') }}">الاشتراك والأرصدة</a>
+                @php($menuProject = \App\Domain\Workspace\Models\Project::query()->whereIn('workspace_id', $viewer->user()->workspaces()->pluck('workspaces.id'))->orderBy('id')->first())
+                <a href="{{ route('dashboard') }}">لوحتي</a><a href="{{ route('app.progress') }}">تقدمي</a><a href="{{ route('app.outputs.index') }}">أصولي</a><a href="{{ $menuProject ? route('app.projects.show', $menuProject) : route('dashboard').'#projects' }}">مشروعي</a><a href="{{ route('profile.edit') }}">الحساب</a><a href="{{ route('app.billing') }}">الاشتراك والأرصدة</a>
                 @if($viewer->isStaff())<a href="{{ route('admin.index') }}">غرفة التحكم</a>@endif
                 <form method="post" action="{{ route('logout') }}">@csrf<button type="submit">تسجيل الخروج</button></form>
             </div></details>

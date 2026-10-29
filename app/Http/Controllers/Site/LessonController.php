@@ -17,6 +17,7 @@ use App\Domain\Insights\Models\ContentReport;
 use App\Domain\Insights\Services\EventRecorder;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Models\ToolOutput;
+use App\Domain\Lab\Services\QualityChecker;
 use App\Domain\Workspace\Models\Project;
 use App\Http\Controllers\Controller;
 use App\Support\Markdown;
@@ -122,7 +123,9 @@ class LessonController extends Controller
             $markdown .= $this->composer->incomingMarkdown($this->composer->incomingAssets($lesson, $user?->id, $project?->id));
         }
         $state = $this->whatIf->evaluate($lesson->whatif_rules ?? [], $values);
-        session(['lab.input.'.$lesson->id => $input, 'lab.asset.'.$lesson->id => ['markdown' => $markdown, 'verdict' => $state['verdict'], 'generated_at' => now()->toDateTimeString()]]);
+        // Stage 2: the same six-item executability check the lab tools run (advisory in lessons: the what-if verdict leads).
+        $quality = app(QualityChecker::class)->check($markdown, $values, ['required' => [], 'advisory' => array_keys(QualityChecker::CHECKS)], array_merge($lesson->guided_steps ?? [], $lesson->lab_config['fields'] ?? []));
+        session(['lab.input.'.$lesson->id => $input, 'lab.asset.'.$lesson->id => ['markdown' => $markdown, 'verdict' => $state['verdict'], 'quality' => $quality, 'generated_at' => now()->toDateTimeString()]]);
         $prefilled = collect(array_merge($this->composer->guidedSteps($lesson, $situation, []), $this->composer->labFields($lesson, $situation, [])))->filter(fn ($f) => $f['prefilled'])->pluck('key')->all();
         $this->events->record($request, 'lesson.lab_generated', ['lesson_id' => $lesson->id, 'tool_id' => $lesson->lab_tool_id, 'part' => 'lab', 'meta' => ['filled' => array_keys(array_filter($input, fn ($v) => trim((string) $v) !== '')), 'prefilled' => $prefilled, 'mode' => $mode]]);
 
@@ -218,7 +221,7 @@ class LessonController extends Controller
         $generated = session('lab.asset.'.$lesson->id);
         // Browsers submit hidden-field newlines as CRLF; keep the stored asset byte-identical to the generated one.
         $data['markdown'] = str_replace("\r\n", "\n", $data['markdown']);
-        $store->save($user, $project, $lesson, $data['title'], $data['type'] ?: ($lesson->outcome_type ?? 'asset'), $data['markdown'], session('lab.input.'.$lesson->id, []), $generated ? ['verdict' => $generated['verdict']] : null);
+        $store->save($user, $project, $lesson, $data['title'], $data['type'] ?: ($lesson->outcome_type ?? 'asset'), $data['markdown'], session('lab.input.'.$lesson->id, []), $generated ? ['verdict' => $generated['verdict']] + ($generated['quality'] ?? []) : null);
         $this->events->record($request, 'asset.saved', ['lesson_id' => $lesson->id, 'tool_id' => $lesson->lab_tool_id, 'part' => 'lab']);
         $this->progress->maybeComplete($user, $lesson);
 

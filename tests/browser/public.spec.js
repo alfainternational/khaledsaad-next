@@ -72,15 +72,15 @@ test.describe('الصفحات العامة', () => {
         await expectNoHorizontalOverflow(page);
     });
 
-    test('الأداة تعرض بوابة التسجيل للزائر', async ({ page }) => {
+    test('الأداة تعمل للزائر بلا تسجيل وتحجز الحفظ والتحسين بحساب', async ({ page }) => {
         await page.goto('/tools');
-        const firstTool = page.locator('a[href*="/tools/"]').first();
+        const firstTool = page.locator('a.tool-card[href*="/tools/"]').first();
         await expect(firstTool).toBeVisible();
         await firstTool.click();
 
         await expect(page).toHaveURL(/\/tools\/[a-z0-9-]+$/);
-        await expect(page.locator('.login-gate')).toBeVisible();
-        await expect(page.locator('.login-gate a.button')).toHaveAttribute('href', /\/register$/);
+        await expect(page.locator('#tool-form')).toBeVisible();
+        await expect(page.locator('a[href$="/register"]', { hasText: 'حسّن بالذكاء الاصطناعي' })).toBeVisible();
         await expectNoHorizontalOverflow(page);
     });
 

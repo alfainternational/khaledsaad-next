@@ -20,31 +20,35 @@ test.describe('الحساب ومساحة العمل', () => {
         expect(errors).toEqual([]);
     });
 
-    test('الدخول ثم تشغيل أداة وحفظ المخرج في المشروع', async ({ page }) => {
+    test('الدخول ثم تشغيل أداة وحفظ المخرج في المشروع', async ({ page }, testInfo) => {
         const errors = trackErrors(page);
         await login(page, MEMBER);
         await expectNoHorizontalOverflow(page, '/dashboard');
 
-        await page.goto('/tools');
-        await page.locator('a[href*="/tools/"]').first().click();
-        await expect(page).toHaveURL(/\/tools\/[a-z0-9-]+$/);
-
-        const form = page.locator('form[action*="/app/tools/"]');
+        await page.goto('/tools/campaign-brief-builder?fresh=1');
+        const form = page.locator('#tool-form');
         await expect(form).toBeVisible();
         await expect(form.locator('#project_id option')).not.toHaveCount(0);
-        await form.locator('#goal').fill('زيادة طلبات الاستشارة المؤهلة خلال 90 يوماً');
-        await form.locator('#audience').fill('أصحاب المشاريع الصغيرة في السعودية');
-        await form.locator('#offer').fill('جلسة تشخيص تسويقي مجانية');
-        await form.getByRole('button', { name: /أنشئ/ }).click();
+        // A distinct goal per Playwright project: both projects share MEMBER, and an identical asset would already be saved.
+        await form.locator('#f-goal').fill(`${testInfo.project.name === 'mobile' ? 25 : 20} استشارة مؤهلة خلال 90 يوماً`);
+        await form.locator('#f-audience').fill('أصحاب المشاريع الصغيرة في السعودية');
+        await form.locator('#f-offer').fill('جلسة تشخيص تسويقي مجانية');
+        await form.locator('#f-channel').selectOption('google');
+        await form.locator('#f-budget').fill('2000');
+        await page.locator('#generate-btn').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        await page.locator('#generate-btn').click();
 
-        await expect(page.locator('.tool-output')).toBeVisible();
-        await expect(page.locator('.tool-output')).not.toBeEmpty();
+        await expect(page.locator('#asset')).toBeVisible();
+        await expect(page.locator('#asset .asset-body')).not.toBeEmpty();
+        await page.locator('#asset [data-action="save"]').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        await page.locator('#asset [data-action="save"]').click();
+        await expect(page.locator('.alert-success').first()).toContainText('حُفظ الأصل');
         await expectNoHorizontalOverflow(page);
 
         await page.goto('/dashboard');
-        await page.locator('a[href*="/app/projects/"]').first().click();
+        await page.locator('#projects a[href*="/app/projects/"]').first().click();
         await expect(page).toHaveURL(/\/app\/projects\/[a-z0-9-]+$/);
-        await expect(page.locator('body')).toContainText(/المسودة|المخرج|مخرجات/);
+        await expect(page.locator('#project-assets')).toContainText('موجز الحملة');
         await expectNoHorizontalOverflow(page);
         expect(errors).toEqual([]);
     });
@@ -71,7 +75,7 @@ test.describe('الحساب ومساحة العمل', () => {
         const errors = trackErrors(page);
         await login(page, ADMIN);
 
-        for (const path of ['/admin', '/admin/academy', '/admin/assessment', '/admin/content', '/admin/operations']) {
+        for (const path of ['/admin', '/admin/academy', '/admin/tools', '/admin/assessment', '/admin/content', '/admin/operations']) {
             const response = await page.goto(path);
             expect(response?.status(), path).toBe(200);
             await expectNoHorizontalOverflow(page, path);

@@ -21,6 +21,7 @@
 8. بدّل symlink `current` إلى الإصدار الجديد.
 9. شغّل `php artisan queue:restart` وأعد تحميل PHP-FPM.
 10. افحص `/up` و`/` و`/sitemap.xml` وتسجيل الدخول وتشغيل الأداة المجانية.
+11. بعد المرحلة 2: افحص `/tools` (15 أداة بلا «قريباً»)، توليد زائر على `/tools/customer-persona?example=1`، حاسبة `/tools/calculators/cac`، المحاكي `/tools/simulator`، و`/admin/tools` بمعدل الحفظ.
 
 ## الرجوع
 
@@ -45,6 +46,7 @@
 - المستودع يجب أن يكون متاحاً للقراءة لحظة الاستنساخ والتحديث؛ البديل الدائم: مفتاح SSH من cPanel → SSH Access يُضاف كـ Deploy Key في GitHub.
 - بلا Redis: الجلسات والكاش والطوابير على قاعدة البيانات، والطابور يُفرَّغ من المجدول كل دقيقة (`queue:work --stop-when-empty`).
 - فحص الجاهزية بعد النشر: `php artisan platform:doctor --env=production` من Terminal.
+- بذر المحتوى بالمراحل (مرة واحدة لكل مرحلة، بعلامة في `storage/app/`): `.seeded` (البذر الأساسي)، `.seeded-stage1` (الأكاديمية والتشخيص)، `.seeded-stage2` (المختبر: 15 أداة وأمثلتها عبر `LabSeeder`). `LabSeeder` idempotent (updateOrCreate بالـslug) فيمكن إعادته يدوياً لتحديث القوالب: `php artisan db:seed --class=LabSeeder --force`، مع ملاحظة أنه يعيد قالب الأداة إلى نسخة الكود (التعديلات اليدوية من استوديو الأداة تُحفظ في `tool_versions` ولا تُمس).
 
 ### ما تعلمناه من أول نشر فعلي (2026-10-28)
 - طابور مهام cPanel (الاستنساخ والنشر من واجهة Git) قد يعلق؛ البديل المعتمد هو `deploy/cpanel-bootstrap.sh` من Terminal.

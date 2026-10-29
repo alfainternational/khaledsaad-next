@@ -15,7 +15,7 @@ class EventRecorder
         'visit.home', 'visit.lesson', 'lesson.part_reached', 'lesson.opening_decided', 'lesson.final_decided', 'lesson.lab_generated',
         'lesson.whatif_used', 'asset.saved', 'asset.copied', 'asset.downloaded', 'question.answered', 'template.downloaded',
         'assessment.started', 'assessment.completed', 'checkin.committed', 'checkin.recorded', 'coach.asked', 'report.sent', 'lesson.completed',
-        'home.first_step',
+        'home.first_step', 'visit.tool', 'tool.generated', 'tool.enhanced', 'asset.shared', 'calculator.used', 'simulator.used',
     ];
 
     public static function sessionToken(Request $request): string

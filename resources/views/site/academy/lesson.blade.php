@@ -93,7 +93,7 @@
             </x-slot:fields>
             @if($generated)
             <div style="height:16px"></div>
-            <x-athar.asset-card id="asset" kicker="أصلك" :title="$lesson->outcome_title" :type="$lesson->outcome_type" :markdown="$generated['markdown']" :verdict="$generated['verdict']" :saveUrl="route('academy.lesson.save', [$course, $lesson])" :member="$member" :saved="$savedAsset && $savedAsset->body_markdown === $generated['markdown']" regenerateForm="lab-form" :lessonId="$lesson->id" :filename="$lesson->outcome_type">
+            <x-athar.asset-card id="asset" kicker="أصلك" :title="$lesson->outcome_title" :type="$lesson->outcome_type" :markdown="$generated['markdown']" :verdict="$generated['verdict']" :quality="$generated['quality'] ?? null" :saveUrl="route('academy.lesson.save', [$course, $lesson])" :member="$member" :saved="$savedAsset && $savedAsset->body_markdown === $generated['markdown']" regenerateForm="lab-form" :lessonId="$lesson->id" :filename="$lesson->outcome_type">
                 @if($whatIf['variable'])
                 <div class="whatif" id="whatif" data-key="{{ $whatIf['variable']['key'] }}">
                     <b>ماذا لو؟</b> <span class="muted small">غيّر متغيّراً واحداً وشاهد الحكم مقابل هدفك.</span>

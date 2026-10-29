@@ -43,10 +43,12 @@ class OperationalFlowsTest extends TestCase
 
         $this->actingAs($user)->post(route('app.tools.run', $tool), [
             'workspace_id' => $workspace->id, 'project_id' => $project->id,
-            'goal' => 'زيادة الطلبات', 'audience' => 'المتاجر الصغيرة', 'offer' => 'خدمة استشارة',
+            'goal' => '20 طلباً خلال 30 يوماً', 'audience' => 'المتاجر الصغيرة', 'offer' => 'خدمة استشارة', 'channel' => 'google', 'budget' => 2000,
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('tool_runs', ['workspace_id' => $workspace->id, 'status' => 'completed']);
+        // No AI key: the base asset is saved as v1 with a notice and nothing is charged.
+        $this->assertDatabaseHas('tool_runs', ['workspace_id' => $workspace->id, 'status' => 'completed', 'used_credits' => 0]);
+        $this->assertDatabaseHas('tool_outputs', ['project_id' => $project->id, 'output_type' => 'campaign_brief', 'version' => 1]);
     }
 
     public function test_ai_tool_charges_credit_once_and_saves_completed_output(): void
@@ -63,11 +65,14 @@ class OperationalFlowsTest extends TestCase
 
         $this->actingAs($user)->post(route('app.tools.run', $tool), [
             'workspace_id' => $workspace->id, 'project_id' => $project->id,
-            'goal' => 'زيادة الوعي', 'audience' => 'أصحاب المتاجر', 'offer' => 'دليل مجاني',
+            'goal' => 'awareness', 'audience' => 'أصحاب المتاجر', 'offer' => 'دليل مجاني', 'pain' => 'لا يعرفون من أين يبدؤون', 'objection' => 'هل ينفع لي؟',
         ])->assertRedirect();
 
         $this->assertSame(8, app(CreditLedger::class)->balance($workspace));
         $this->assertDatabaseHas('tool_runs', ['tool_id' => $tool->id, 'status' => 'completed', 'used_credits' => 2]);
+        $output = \App\Domain\Lab\Models\ToolOutput::query()->where('project_id', $project->id)->firstOrFail();
+        $this->assertSame('ثلاث زوايا محتوى عملية', $output->body_markdown);
+        $this->assertTrue($output->payload['enhanced']);
     }
 
     public function test_unexpected_ai_failure_releases_reserved_credit_and_marks_run_failed(): void
@@ -87,9 +92,10 @@ class OperationalFlowsTest extends TestCase
             }
         });
 
+        config()->set('services.openai.key', 'test-key');
         $this->actingAs($user)->post(route('app.tools.run', $tool), [
             'workspace_id' => $workspace->id, 'project_id' => $project->id,
-            'goal' => 'زيادة الوعي', 'audience' => 'أصحاب المتاجر', 'offer' => 'دليل مجاني',
+            'goal' => 'awareness', 'audience' => 'أصحاب المتاجر', 'offer' => 'دليل مجاني', 'pain' => 'لا يعرفون من أين يبدؤون', 'objection' => 'هل ينفع لي؟',
         ])->assertRedirect()->assertSessionHasErrors('tool');
 
         $this->assertSame(10, app(CreditLedger::class)->balance($workspace));
@@ -103,7 +109,7 @@ class OperationalFlowsTest extends TestCase
         $workspace = Workspace::query()->create(['name' => 'مساحة معلقة', 'slug' => 'stale-space']);
         $workspace->members()->attach($user, ['role' => 'owner']);
         $project = $workspace->projects()->create(['name' => 'معلق', 'slug' => 'stale']);
-        $tool = Tool::query()->where('kind', 'ai')->firstOrFail();
+        $tool = Tool::query()->where('credit_cost', '>', 0)->where('is_published', true)->firstOrFail();
         app(CreditLedger::class)->record($workspace, 'grant:stale', 'grant', 10, 'اختبار');
         app(CreditLedger::class)->record($workspace, 'run:stale-run:reserve', 'reserve', -2, 'حجز');
         DB::table('tool_runs')->insert([
@@ -127,9 +133,9 @@ class OperationalFlowsTest extends TestCase
         $workspace = Workspace::query()->create(['name' => 'مساحة مقروءة', 'slug' => 'viewer-space']);
         $workspace->members()->attach($viewer, ['role' => 'viewer']);
         $project = $workspace->projects()->create(['name' => 'خاص', 'slug' => 'private']);
-        $tool = Tool::query()->where('kind', 'ai')->firstOrFail();
+        $tool = Tool::query()->where('credit_cost', '>', 0)->where('is_published', true)->firstOrFail();
 
-        $payload = ['workspace_id' => $workspace->id, 'project_id' => $project->id, 'goal' => 'هدف', 'audience' => 'جمهور', 'offer' => 'عرض'];
+        $payload = ['workspace_id' => $workspace->id, 'project_id' => $project->id] + \App\Domain\Lab\Services\LabCatalog::find($tool->slug)['example_input'];
         $this->actingAs($viewer)->post(route('app.tools.run', $tool), $payload)->assertForbidden();
 
         $workspace->members()->updateExistingPivot($viewer->id, ['role' => 'editor']);

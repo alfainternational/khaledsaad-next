@@ -104,7 +104,7 @@ class ControlRoomMetrics
     public function creditEconomy(int $days): array
     {
         $since = now()->subDays($days);
-        $aiRuns = DB::table('tool_runs')->join('tools', 'tools.id', '=', 'tool_runs.tool_id')->where('tools.kind', 'ai')->where('tool_runs.created_at', '>=', $since)->where('tool_runs.status', 'completed');
+        $aiRuns = DB::table('tool_runs')->join('tools', 'tools.id', '=', 'tool_runs.tool_id')->where('tool_runs.used_credits', '>', 0)->where('tool_runs.created_at', '>=', $since)->where('tool_runs.status', 'completed');
         $runs = (clone $aiRuns)->count();
         $credits = (int) (clone $aiRuns)->sum('tool_runs.used_credits');
         $revenue = (int) DB::table('payments')->where('status', 'paid')->where('created_at', '>=', $since)->sum('amount');

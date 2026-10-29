@@ -7,6 +7,7 @@
         <div class="row">
             <div class="toggle" role="group" aria-label="الفترة"><a href="{{ route('admin.index', ['days' => 7]) }}" @if($days === 7) aria-current="true" @endif>7 أيام</a><a href="{{ route('admin.index', ['days' => 30]) }}" @if($days === 30) aria-current="true" @endif>30 يوماً</a></div>
             <x-athar.button href="{{ route('admin.academy.index') }}" variant="secondary">استوديو الدروس</x-athar.button>
+            <x-athar.button href="{{ route('admin.tools.index') }}" variant="secondary">استوديو الأدوات</x-athar.button>
             <span class="btn btn-secondary" aria-disabled="true" title="المرحلة 3">صندوق المصادر (المرحلة 3)</span>
             <button class="btn btn-secondary" type="button" id="cmdk-open" aria-controls="cmdk">⌘K بحث</button>
             <form method="post" action="{{ route('admin.preview', ['as' => 'visitor']) }}" id="preview-form" class="row">@csrf<label class="small" for="preview-as">اعرض المنصة كـ</label><select id="preview-as" name="as" class="input" style="min-height:44px;width:auto">@foreach($previews as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach</select><button class="btn btn-secondary" type="submit">اعرض</button></form>
@@ -31,7 +32,15 @@
     </div>
 
     <div class="grid grid-2">
-        <div class="card" id="experiment"><x-athar.kicker>تجربة قيد التشغيل</x-athar.kicker><h2 style="font-size:20px">لا تجربة A/B نشطة</h2><p class="muted small">تجربة واحدة في كل مرة على صياغة بطاقة أو ترتيب قسم؛ تُعتمد تلقائياً عند الدلالة الإحصائية. (جداول التجارب في المرحلة 2.)</p></div>
+        <div class="card" id="experiment"><x-athar.kicker>تجربة قيد التشغيل</x-athar.kicker>
+            @forelse($experiments as $exp)
+                <h2 style="font-size:20px">{{ $exp['name'] }}</h2><p class="muted small">أداة «{{ $exp['tool']->name }}» · المقياس: معدل الحفظ · منذ {{ $exp['started'] }}</p>
+                <ul class="list">@foreach($exp['variants'] as $v)<li><span>{{ $v['label'] }} · v{{ $v['version'] }} ({{ $v['weight'] }}٪)</span><span>{{ $v['rate'] === null ? '—' : $v['rate'].'٪' }} <span class="muted small">{{ $v['converted'] }}/{{ $v['exposed'] }}</span></span></li>@endforeach</ul>
+                <a class="btn btn-text" href="{{ route('admin.tools.show', $exp['tool']) }}#experiment">افتح في الاستوديو ←</a>
+            @empty
+                <h2 style="font-size:20px">لا تجربة A/B نشطة</h2><p class="muted small">تجربة واحدة في كل مرة بين إصدارَي قالب أداة، تُقاس بمعدل الحفظ. <a href="{{ route('admin.tools.index') }}">ابدأ واحدة من استوديو الأدوات</a>.</p>
+            @endforelse
+        </div>
         <div class="card" id="success"><x-athar.kicker>صندوق نجاح المتعلمين</x-athar.kicker><h2 style="font-size:20px">متوقفون 7 أيام وبلاغات</h2>
             <ul class="list">@forelse($success['stalled'] as $u)<li><span>{{ $u->name }} <span class="muted small">{{ $u->email }}</span></span><span class="row"><span class="when">{{ \Illuminate\Support\Carbon::parse($u->last_seen)->diffForHumans() }}</span><a class="btn btn-text" href="mailto:{{ $u->email }}?subject={{ rawurlencode('أصلك ينتظرك في أثر') }}">أصلك ينتظرك</a></span></li>@empty<li class="muted">لا متوقفين الآن.</li>@endforelse</ul>
             <h3 style="font-size:16px;margin-top:12px">بلاغات من داخل الدروس</h3>

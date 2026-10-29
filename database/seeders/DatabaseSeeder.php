@@ -52,22 +52,6 @@ class DatabaseSeeder extends Seeder
             ['name' => 'قالب لوحة القياس الأسبوعية', 'slug' => 'weekly-scorecard-template', 'description' => 'مؤشر وقرار وتجربة تالية.', 'template' => json_encode(['leading_metric', 'outcome_metric', 'decision', 'next_test']), 'is_published' => true, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        foreach ([
-            ['name' => 'باني موجز الحملة', 'slug' => 'campaign-brief-builder', 'category' => 'التخطيط', 'description' => 'حوّل الهدف والجمهور والعرض إلى موجز حملة من صفحة واحدة.', 'kind' => 'deterministic', 'credit_cost' => 0],
-            ['name' => 'مولّد زوايا المحتوى', 'slug' => 'content-angle-generator', 'category' => 'المحتوى', 'description' => 'استخرج زوايا متنوعة مرتبطة بمرحلة العميل ودليل الرسالة.', 'kind' => 'ai', 'credit_cost' => 2],
-            ['name' => 'مراجع صفحة الهبوط', 'slug' => 'landing-page-reviewer', 'category' => 'التحويل', 'description' => 'افحص وضوح العرض والثقة والخطوة التالية في صفحة الهبوط.', 'kind' => 'ai', 'credit_cost' => 3],
-        ] as $tool) {
-            $createdTool = Tool::query()->create($tool + ['is_published' => true, 'input_schema' => ['goal', 'audience', 'offer']]);
-            $createdTool->versions()->create([
-                'version' => 1,
-                'input_schema' => ['goal', 'audience', 'offer'],
-                'output_schema' => ['text', 'tokens', 'model'],
-                'prompt_key' => $tool['kind'] === 'ai' ? 'marketing-ar-v1' : null,
-                'config_hash' => hash('sha256', json_encode($tool, JSON_UNESCAPED_UNICODE)),
-                'is_active' => true,
-            ]);
-        }
-
         $demoUser = User::forceCreate([
             'name' => 'حساب العرض التعليمي', 'email' => 'demo@example.invalid',
             'email_verified_at' => now(), 'password' => Hash::make(Str::random(40)),
@@ -78,5 +62,8 @@ class DatabaseSeeder extends Seeder
             'name' => 'مثال تعليمي: إطلاق خدمة استشارية', 'slug' => 'illustrative-consulting-launch',
             'profile' => ['illustrative' => true, 'goal' => 'اختبار الطلب دون ادعاء نتائج حقيقية'],
         ]);
+
+        // المرحلة 2: المختبر (15 أداة، إصدار القالب الأول، 3 أمثلة مجهولة لكل مولّد).
+        $this->call(LabSeeder::class);
     }
 }

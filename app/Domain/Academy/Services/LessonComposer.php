@@ -5,6 +5,7 @@ namespace App\Domain\Academy\Services;
 use App\Domain\Academy\Models\Lesson;
 use App\Domain\Assessment\Services\Catalog;
 use App\Domain\Lab\Models\ToolOutput;
+use App\Domain\Lab\Services\GeneratorEngine;
 use App\Domain\Workspace\Models\Project;
 use App\Support\Markdown;
 use Illuminate\Support\Collection;
@@ -15,7 +16,7 @@ use Illuminate\Support\Collection;
  */
 class LessonComposer
 {
-    public function __construct(private readonly RuleEvaluator $evaluator) {}
+    public function __construct(private readonly RuleEvaluator $evaluator, private readonly GeneratorEngine $engine) {}
 
     /** The value bag the situation, steps, lab and what-if read from. */
     public function situation(Lesson $lesson, ?Project $project, string $mode): array
@@ -105,7 +106,8 @@ class LessonComposer
         $values['project_name_line'] = $values['project_name'] ?? '';
         $values['date'] = now()->format('Y/m/d');
 
-        return Markdown::fill($template, $values);
+        // One filler for lesson labs and lab tools (stage 2): the lab engine renders the template.
+        return $this->engine->renderTemplate($template, $values);
     }
 
     /** Missing required fields (keys → labels) for the lab. */

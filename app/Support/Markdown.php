@@ -29,6 +29,18 @@ class Markdown
 
                 continue;
             }
+            if (str_starts_with($line, '```')) {
+                $code = [];
+                $i++;
+                while ($i < $n && ! str_starts_with(rtrim($lines[$i]), '```')) {
+                    $code[] = rtrim($lines[$i]);
+                    $i++;
+                }
+                $i++;
+                $html .= '<pre class="asset-md"><code>'.e(implode("\n", $code)).'</code></pre>';
+
+                continue;
+            }
             if (preg_match('/^(-{3,}|\*{3,})$/', $line)) {
                 $html .= '<hr>';
                 $i++;

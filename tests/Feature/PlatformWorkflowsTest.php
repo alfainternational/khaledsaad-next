@@ -51,17 +51,14 @@ class PlatformWorkflowsTest extends TestCase
         $workspace = Workspace::query()->create(['name' => 'المخرجات', 'slug' => 'outputs']);
         $workspace->members()->attach($user, ['role' => 'editor']);
         $project = $workspace->projects()->create(['name' => 'مشروع', 'slug' => 'project']);
-        $tool = Tool::query()->firstOrFail();
-        $runId = DB::table('tool_runs')->insertGetId([
-            'workspace_id' => $workspace->id, 'project_id' => $project->id, 'tool_id' => $tool->id,
-            'user_id' => $user->id, 'public_id' => 'saved-run', 'status' => 'completed',
-            'input_payload' => '{}', 'output_payload' => json_encode(['text' => 'مخرج محفوظ']),
-            'reserved_credits' => 0, 'used_credits' => 0, 'created_at' => now(), 'updated_at' => now(),
-        ]);
+        $tool = Tool::query()->where('slug', 'campaign-brief-builder')->firstOrFail();
+        $output = app(\App\Domain\Lab\Services\AssetVault::class)->save($user, $project, $tool, 'مخرج محفوظ', 'campaign_brief', "# مخرج محفوظ
 
-        $this->actingAs($user)->get(route('app.projects.show', $project))->assertOk()->assertSee('مخرج محفوظ');
-        $this->actingAs($user)->delete(route('app.tool-runs.destroy', $runId))->assertRedirect();
-        $this->assertDatabaseMissing('tool_runs', ['id' => $runId]);
+نص", ['offer' => 'x']);
+
+        $this->actingAs($user)->get(route('app.projects.show', $project))->assertOk()->assertSee('مخرج محفوظ')->assertSee('أصول المشروع');
+        $this->actingAs($user)->delete(route('app.outputs.destroy', $output))->assertRedirect();
+        $this->assertDatabaseMissing('tool_outputs', ['id' => $output->id]);
     }
 
     public function test_billing_page_shows_balance_and_subscription(): void

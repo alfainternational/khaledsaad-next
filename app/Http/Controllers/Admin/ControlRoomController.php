@@ -32,6 +32,7 @@ class ControlRoomController extends Controller
             'palette' => $metrics->palette(),
             'previews' => Viewer::PREVIEWS,
             'computedAt' => cache()->get('platform:quality_signals_computed_at'),
+            'experiments' => $this->runningExperiments(),
         ]);
     }
 
@@ -65,6 +66,24 @@ class ControlRoomController extends Controller
         session(['admin_preview_as' => $as]);
 
         return redirect()->route('home');
+    }
+
+    /** Running A/B experiments (stage 2: template versions of tools, measured by save rate). */
+    private function runningExperiments(): array
+    {
+        $metrics = app(\App\Domain\Lab\Services\StudioMetrics::class);
+        $out = [];
+        foreach (\App\Domain\Lab\Models\Experiment::query()->where('status', 'running')->with('variants')->get() as $exp) {
+            $tool = \App\Domain\Lab\Models\Tool::query()->find($exp->subject_id);
+            if (! $tool) {
+                continue;
+            }
+            $rates = $metrics->experimentRates($exp);
+            $versions = $tool->versions()->get()->keyBy('id');
+            $out[] = ['name' => $exp->name, 'tool' => $tool, 'started' => $exp->started_at?->diffForHumans() ?? '—', 'variants' => $exp->variants->map(fn ($v) => ['label' => $v->label, 'weight' => $v->weight, 'version' => $versions[$v->tool_version_id]->version ?? '—'] + ($rates[$v->id] ?? ['exposed' => 0, 'converted' => 0, 'rate' => null]))->all()];
+        }
+
+        return $out;
     }
 
     private function authorizeStaff(Request $request): void
