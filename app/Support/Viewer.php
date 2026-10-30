@@ -58,4 +58,15 @@ class Viewer
 
         return $user !== null && in_array($user->platform_role, self::STAFF_ROLES, true);
     }
+
+    /** The real admin behind «اعرض كهذا المستخدم», or null when nobody is being impersonated. */
+    public function impersonating(): ?User
+    {
+        $id = session('impersonator_id');
+        if (! Auth::check() || ! is_numeric($id) || (int) $id <= 0) {
+            return null;
+        }
+
+        return User::query()->find((int) $id);
+    }
 }

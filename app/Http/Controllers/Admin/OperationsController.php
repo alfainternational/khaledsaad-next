@@ -3,66 +3,47 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
+/** العمليات والصحة — /admin/operations (blueprint §6.5): health cards and links to the standard tables. */
 class OperationsController extends Controller
 {
     public function index(Request $request): View
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeRole($request, ['operations', 'admin', 'super_admin']);
+        // Same heartbeat keys and 600s threshold as /health.json.
+        $age = fn (string $key) => ($ts = (int) cache()->get($key, 0)) > 0 ? now()->timestamp - $ts : null;
+        $scheduler = $age('platform:scheduler_heartbeat');
+        $worker = $age('platform:worker_heartbeat');
 
         return view('admin.operations', [
-            'redirects' => DB::table('redirects')->latest()->get(),
-            'plans' => DB::table('plans')->orderBy('price')->get(),
+            'health' => [
+                'database' => rescue(fn () => DB::select('select 1') !== [], false),
+                'scheduler_age' => $scheduler, 'scheduler_ok' => $scheduler !== null && $scheduler < 600,
+                'worker_age' => $worker, 'worker_ok' => $worker !== null && $worker < 600,
+                'queue_pending' => rescue(fn () => DB::table('jobs')->count(), 0),
+                'queue_failed' => rescue(fn () => DB::table('failed_jobs')->count(), 0),
+                'backup' => (string) config('platform.backup_marker') !== '' && is_file((string) config('platform.backup_marker')) ? date('Y/m/d H:i', filemtime((string) config('platform.backup_marker'))) : null,
+                'paypal' => filled(config('services.paypal.client_id')), 'ai' => filled(config('services.openai.key')),
+            ],
             'stats' => [
                 'payments' => DB::table('payments')->count(),
                 'subscriptions' => DB::table('subscriptions')->where('status', 'active')->count(),
                 'failed_runs' => DB::table('tool_runs')->where('status', 'failed')->count(),
+                'redirects' => DB::table('redirects')->count(),
+                'users' => DB::table('users')->count(),
+                'audit' => DB::table('audit_logs')->count(),
             ],
+            'recentAudit' => DB::table('audit_logs')->leftJoin('users', 'users.id', '=', 'audit_logs.user_id')
+                ->select('audit_logs.action', 'audit_logs.subject_type', 'audit_logs.subject_id', 'audit_logs.created_at', 'users.name as user_name')
+                ->orderByDesc('audit_logs.id')->limit(10)->get(),
         ]);
     }
 
-    public function storeRedirect(Request $request): RedirectResponse
+    private function authorizeRole(Request $request, array $roles): void
     {
-        $this->authorizeAdmin($request);
-        $data = $request->validate([
-            // Reject protocol-relative targets ("//host") and backslashes/whitespace/control chars
-            // (browsers normalise "/\host" to "//host", which would be an open redirect).
-            'from_path' => ['required', 'string', 'starts_with:/', 'not_regex:/^\/\//', 'not_regex:/[\\\\\s\x00-\x1f]/', 'max:500', 'unique:redirects,from_path'],
-            'to_path' => ['required', 'string', 'starts_with:/', 'not_regex:/^\/\//', 'not_regex:/[\\\\\s\x00-\x1f]/', 'max:500'],
-            'status_code' => ['required', 'integer', 'in:301,302,307,308,410'],
-        ]);
-        abort_if($data['from_path'] === $data['to_path'], 422);
-        DB::table('redirects')->insert($data + ['is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
-        DB::table('audit_logs')->insert([
-            'user_id' => $request->user()->id, 'action' => 'redirect.created', 'subject_type' => 'redirect',
-            'subject_id' => $data['from_path'], 'context' => json_encode(['to' => $data['to_path'], 'status' => $data['status_code']]),
-            'request_id' => $request->attributes->get('request_id'), 'created_at' => now(), 'updated_at' => now(),
-        ]);
-
-        return back()->with('status', 'تمت إضافة التحويل.');
-    }
-
-    public function destroyRedirect(Request $request, int $redirect): RedirectResponse
-    {
-        $this->authorizeAdmin($request);
-        $current = DB::table('redirects')->where('id', $redirect)->first();
-        abort_unless($current, 404);
-        DB::table('redirects')->where('id', $redirect)->delete();
-        DB::table('audit_logs')->insert([
-            'user_id' => $request->user()->id, 'action' => 'redirect.deleted', 'subject_type' => 'redirect',
-            'subject_id' => (string) $redirect, 'context' => json_encode(['from' => $current->from_path, 'to' => $current->to_path]),
-            'request_id' => $request->attributes->get('request_id'), 'created_at' => now(), 'updated_at' => now(),
-        ]);
-
-        return back()->with('status', 'تم حذف التحويل.');
-    }
-
-    private function authorizeAdmin(Request $request): void
-    {
-        abort_unless(in_array($request->user()?->platform_role, ['operations', 'admin', 'super_admin'], true), 403);
+        abort_unless(in_array($request->user()?->platform_role, $roles, true), 403);
     }
 }

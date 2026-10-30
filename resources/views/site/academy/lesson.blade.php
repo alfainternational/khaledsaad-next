@@ -179,7 +179,7 @@
         @endif
         <div class="next-grid">
             @if($next)<x-athar.card heading="h3" title="الدرس التالي" :desc="$next->title" :href="route('academy.lesson', [$course, $next])" tag="تابع" />@else<x-athar.card heading="h3" title="أكملت المسار" desc="أعد التشخيص لترى أثرك رقماً، أو ابدأ المسار التالي." :href="route('assess.start')" tag="قِس الأثر" />@endif
-            @if($relatedTool)<x-athar.card heading="h3" title="الأداة" :desc="$relatedTool->name" :href="route('tools.show', $relatedTool)" tag="المختبر" />@endif
+            @if($relatedTool)<x-athar.card heading="h3" title="الأداة" :desc="$relatedTool->name" :href="\App\Support\Markdown::toolUrl($relatedTool)" tag="المختبر" />@endif
             @if($relatedArticle)<x-athar.card heading="h3" title="المادة" :desc="$relatedArticle->title" :href="route('articles.show', $relatedArticle)" tag="المجلة" />@endif
         </div>
         <div class="row" style="margin-top:16px">@if($prev)<a class="btn btn-text" href="{{ route('academy.lesson', [$course, $prev]) }}">→ السابق: {{ $prev->title }}</a>@endif @if($next)<a class="btn btn-text" href="{{ route('academy.lesson', [$course, $next]) }}">التالي: {{ $next->title }} ←</a>@endif</div>

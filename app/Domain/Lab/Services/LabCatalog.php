@@ -36,6 +36,27 @@ class LabCatalog
 
     public const CALCULATORS = ['cac' => 'تكلفة اكتساب العميل (CAC)', 'ltv' => 'القيمة الدائمة للعميل (LTV)', 'roas' => 'العائد على الإنفاق الإعلاني (ROAS)', 'conversion-sample' => 'معدل التحويل وحجم العينة'];
 
+    /** The lab tool each of the twelve paths hands the learner at the end of a lesson (blueprint §4.5 part 8 "الأداة"). */
+    public const COURSE_TOOLS = [
+        'marketing-foundations' => 'campaign-brief-builder',
+        'audience-and-personas' => 'customer-persona',
+        'offer-value-positioning' => 'value-proposition',
+        'content-writing-persuasion' => 'headlines-cta',
+        'social-media' => 'content-calendar',
+        'paid-ads' => 'ad-campaign-simulator',
+        'seo-content-marketing' => 'content-angle-generator',
+        'email-and-crm' => 'email-sequence',
+        'measurement-analytics-cro' => 'utm-builder',
+        'ai-in-marketing' => 'prompt-builder',
+        'automation-workflows' => 'email-sequence',
+        'integrated-marketing-plan' => 'campaign-brief-builder',
+    ];
+
+    public static function toolSlugForCourse(string $courseSlug): ?string
+    {
+        return self::COURSE_TOOLS[$courseSlug] ?? null;
+    }
+
     public static function label(string $type): string
     {
         return self::CHAIN[$type] ?? self::LESSON_ASSETS[$type] ?? ($type === 'profile' ? 'ملف المشروع' : $type);

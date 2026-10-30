@@ -1,29 +1,44 @@
-<x-app-layout>
-    <x-slot name="header"><h1 class="font-semibold text-xl text-gray-800">الاشتراك والأرصدة</h1></x-slot>
-    <div class="py-12"><div class="max-w-5xl mx-auto sm:px-6 lg:px-8 grid gap-5 md:grid-cols-2">
-        @if(session('status'))<div class="md:col-span-2 bg-green-50 text-green-800 p-4 rounded-xl">{{ session('status') }}</div>@endif
-        @if($errors->has('payment'))<div class="md:col-span-2 bg-red-50 text-red-800 p-4 rounded-xl">{{ $errors->first('payment') }}</div>@endif
+@extends('layouts.platform')
+@section('title', 'الاشتراك والأرصدة — أثر')
+@section('noindex', '1')
+@section('content')
+<section class="app-hero"><div class="shell">
+    <x-athar.breadcrumbs :items="[['لوحتي', route('dashboard')], ['الاشتراك والأرصدة', null]]" />
+    <h1>الاشتراك والأرصدة</h1>
+    <p class="muted">رصيد مساحة عملك وخطتك الحالية، والخطط المتاحة للاشتراك بدفعة مستقلة.</p>
+</div></section>
+<section class="section-tight"><div class="shell">
+    <x-athar.flash />
+    <div class="grid grid-2 billing-grid">
         @foreach($workspaces as $workspace)
-            <article class="bg-white rounded-xl shadow-sm p-6">
-                <h3 class="text-xl font-bold">{{ $workspace->name }}</h3>
-                <p class="mt-3">الرصيد المتاح: <strong class="text-2xl">{{ $workspace->balance }}</strong></p>
-                <p class="mt-2">الخطة: <strong>{{ $workspace->subscription->plan ?? 'free' }}</strong></p>
-                <p>الحالة: {{ ($workspace->subscription?->ends_at && \Illuminate\Support\Carbon::parse($workspace->subscription->ends_at)->isPast()) ? 'انتهت الفترة المدفوعة' : ($workspace->subscription->status ?? 'active') }}</p>
-                @if($workspace->subscription?->ends_at)<p>نهاية الفترة: {{ \Illuminate\Support\Carbon::parse($workspace->subscription->ends_at)->format('Y/m/d') }}</p>@endif
+            @php($ended = $workspace->subscription?->ends_at && \Illuminate\Support\Carbon::parse($workspace->subscription->ends_at)->isPast())
+            <article class="card">
+                <x-athar.kicker>مساحة العمل</x-athar.kicker>
+                <h2>{{ $workspace->name }}</h2>
+                <p class="price">{{ $workspace->balance }} <span>رصيد متاح</span></p>
+                <ul class="list">
+                    <li><span>الخطة</span><strong>{{ $workspace->subscription->plan ?? 'free' }}</strong></li>
+                    <li><span>الحالة</span><strong>{{ $ended ? 'انتهت الفترة المدفوعة' : ($workspace->subscription->status ?? 'active') }}</strong></li>
+                    @if($workspace->subscription?->ends_at)<li><span>نهاية الفترة</span><span class="when">{{ \Illuminate\Support\Carbon::parse($workspace->subscription->ends_at)->format('Y/m/d') }}</span></li>@endif
+                </ul>
             </article>
         @endforeach
         @foreach($plans as $plan)
-            <article class="bg-slate-900 text-white rounded-xl shadow-sm p-6">
-                <h3 class="text-xl font-bold">{{ $plan->name }}</h3><p class="text-3xl mt-3">{{ number_format($plan->price / 100, 2) }} {{ $plan->currency }} / شهر</p><p>{{ $plan->credits }} رصيد</p><p class="mt-2 text-sm">تجديد يدوي بدفعة مستقلة. لا يوجد خصم متكرر تلقائي.</p>
+            <article class="card featured-plan">
+                <x-athar.kicker>خطة</x-athar.kicker>
+                <h2>{{ $plan->name }}</h2>
+                <p class="price">{{ number_format($plan->price / 100, 2) }} <span>{{ $plan->currency }} / شهر</span></p>
+                <p class="card-desc">{{ $plan->credits }} رصيد. تجديد يدوي بدفعة مستقلة؛ لا يوجد خصم متكرر تلقائي.</p>
                 @if($workspaces->isNotEmpty())
                     @if($paymentsEnabled)
-                        <form method="POST" action="{{ route('app.billing.orders.store') }}" class="mt-4">@csrf<input type="hidden" name="workspace_id" value="{{ $workspaces->first()->id }}"><input type="hidden" name="plan_id" value="{{ $plan->id }}"><button class="px-5 py-2 bg-orange-500 rounded-lg" type="submit">اشترك عبر PayPal</button></form>
-                        <p class="mt-2 text-xs text-slate-300">الدفع يتم على صفحة PayPal الآمنة ولا نحتفظ ببيانات بطاقتك.</p>
+                        <form method="POST" action="{{ route('app.billing.orders.store') }}">@csrf<input type="hidden" name="workspace_id" value="{{ $workspaces->first()->id }}"><input type="hidden" name="plan_id" value="{{ $plan->id }}"><button class="btn btn-primary" type="submit">اشترك عبر PayPal</button></form>
+                        <p class="small muted">الدفع يتم على صفحة PayPal الآمنة ولا نحتفظ ببيانات بطاقتك.</p>
                     @else
-                        <p class="mt-4 text-sm text-slate-300">الدفع الإلكتروني غير مفعّل حالياً.</p>
+                        <p class="small muted">الدفع الإلكتروني غير مفعّل حالياً.</p>
                     @endif
                 @endif
             </article>
         @endforeach
-    </div></div>
-</x-app-layout>
+    </div>
+</div></section>
+@endsection

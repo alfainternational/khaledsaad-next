@@ -67,5 +67,7 @@ class DatabaseSeeder extends Seeder
         // المرحلة 3: المجلة (التصنيفات والوسوم والمؤلفون والمصادر المراقبة، 40 مصطلحاً و50 مادة من database/content).
         $this->call(MagazineSeeder::class);
         $this->call(CompleteAcademySeeder::class);
+        // المرحلة 4 (الاكتمال): قواعد توجيه تغطي المسارات الـ12.
+        $this->call(StageFourCompletionSeeder::class);
     }
 }

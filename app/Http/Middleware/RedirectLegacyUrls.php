@@ -38,7 +38,8 @@ class RedirectLegacyUrls
         }
 
         if ((int) $redirect->status_code === 410) {
-            return response('', 410);
+            // Deliberately removed content gets the designed 410 page (blueprint §4.15), not an empty body.
+            return response()->view('errors.410', [], 410)->header('X-Robots-Tag', 'noindex');
         }
 
         $target = (string) $redirect->to_path;

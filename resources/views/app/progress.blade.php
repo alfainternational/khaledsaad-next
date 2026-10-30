@@ -19,7 +19,10 @@
     </div>
     <aside class="stack">
         <div class="card" id="certificates"><x-athar.kicker>الشهادات</x-athar.kicker>
-            @if($certificates->isEmpty())<p class="muted small">تُصدر شهادة المسار عند إكمال كل دروسه وتسجيل نتيجة واقعية واحدة على الأقل.</p>@else<ul class="list">@foreach($certificates as $cert)<li><span>{{ $cert->title }}<br><a class="text-link" href="{{ route('certificates.show', $cert->verification_code) }}">{{ $cert->revoked_at ? 'شهادة ملغاة — عرض الحالة' : 'عرض الشهادة والتحقق' }}</a><br><span class="small muted">رمز التحقق: <code class="verification-code">{{ $cert->verification_code }}</code></span></span><span class="when">{{ \Illuminate\Support\Carbon::parse($cert->issued_at)->format('Y/m/d') }}</span></li>@endforeach</ul>@endif
+            @if($certificates->isEmpty() && $pendingCertificates->isEmpty())<p class="muted small">تُصدر شهادة المسار عند إكمال كل دروسه وتسجيل نتيجة واقعية واحدة على الأقل، وهي من مزايا الخطة الاحترافية.</p>@endif
+            @if($certificates->isNotEmpty())<ul class="list">@foreach($certificates as $cert)<li><span>{{ $cert->title }}<br><a class="text-link" href="{{ route('certificates.show', $cert->verification_code) }}">{{ $cert->revoked_at ? 'شهادة ملغاة — عرض الحالة' : 'عرض الشهادة والتحقق' }}</a><br><span class="small muted">رمز التحقق: <code class="verification-code">{{ $cert->verification_code }}</code></span></span><span class="when">{{ \Illuminate\Support\Carbon::parse($cert->issued_at)->format('Y/m/d') }}</span></li>@endforeach</ul>@endif
+            @if($pendingCertificates->isNotEmpty())<div class="pending-certificates" data-pending-certificates><p class="small"><strong>شهادة مستحقة:</strong> أكملت {{ $pendingCertificates->count() === 1 ? 'مسار «'.$pendingCertificates->first()->title.'»' : $pendingCertificates->count().' مسارات' }} بنتيجة واقعية. الشهادات من مزايا الخطة الاحترافية؛ تُصدر فوراً عند تفعيلها.</p><a class="btn btn-primary" href="{{ route('app.billing') }}">فعّل الخطة الاحترافية</a></div>@endif
+            @if(! $hasPaidPlan && $certificates->isNotEmpty())<p class="small muted">شهاداتك الصادرة تبقى صالحة وقابلة للتحقق العام.</p>@endif
         </div>
     </aside>
 </div></section>

@@ -65,7 +65,8 @@ test.describe('الرحلة الكاملة للشريحة العمودية', () 
         // المرحلة 3: خريطة 3 أولويات برابط درس حقيقي، نسخ وتنزيل بلا تسجيل.
         await expect(page).toHaveURL(/\/assess\/result\?t=/);
         await expect(page.locator('#priorities .priority')).toHaveCount(3);
-        await expect(page.locator('#priorities a[href*="/academy/marketing-foundations/"]').first()).toBeVisible();
+        // Stage 4: routing rules cover all twelve paths, so the first priority links a real lesson of whichever path fits the level.
+        await expect(page.locator('#priorities a[href*="/academy/"]').first()).toBeVisible();
         await expect(page.locator('#priorities [data-action="copy"]')).toBeVisible();
         await expect(page.locator('#priorities [data-action="download-pdf"]')).toBeVisible();
         await expect(page.locator('.dim-bar')).toHaveCount(5);

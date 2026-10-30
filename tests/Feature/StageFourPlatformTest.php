@@ -49,6 +49,9 @@ class StageFourPlatformTest extends TestCase
     public function test_certificate_requires_real_result_in_same_course_and_is_not_reissued_after_revocation(): void
     {
         $user = User::factory()->create();
+        $space = Workspace::create(['name' => 'مساحة الشهادة', 'slug' => 'certificate-space']);
+        $space->members()->attach($user, ['role' => 'owner']);
+        DB::table('subscriptions')->insert(['workspace_id' => $space->id, 'plan' => 'pro', 'status' => 'active', 'ends_at' => now()->addMonth(), 'created_at' => now(), 'updated_at' => now()]);
         $course = Course::where('slug', 'marketing-foundations')->first();
         foreach ($course->lessons as $lesson) {
             DB::table('activity_completions')->insert(['user_id' => $user->id, 'lesson_id' => $lesson->id, 'completed_at' => now()]);

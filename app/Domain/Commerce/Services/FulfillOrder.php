@@ -3,6 +3,7 @@
 namespace App\Domain\Commerce\Services;
 
 use App\Domain\Workspace\Models\Workspace;
+use App\Events\SubscriptionActivated;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -24,7 +25,8 @@ class FulfillOrder
      */
     public function handle(string $orderPublicId, string $paypalOrderId, array $capture, array $payload, string $source): bool
     {
-        return DB::transaction(function () use ($orderPublicId, $paypalOrderId, $capture, $payload, $source): bool {
+        $activated = null;
+        $settled = DB::transaction(function () use ($orderPublicId, $paypalOrderId, $capture, $payload, $source, &$activated): bool {
             $order = DB::table('orders')->where('public_id', $orderPublicId)->lockForUpdate()->first();
             if (! $order) {
                 throw new InvalidArgumentException('الطلب غير معروف.');
@@ -81,8 +83,15 @@ class FulfillOrder
             if ((int) $plan->credits > 0) {
                 $this->ledger->record($workspace, 'payment:paypal:'.$capture['id'], 'grant', (int) $plan->credits, 'رصيد دفعة مؤكدة عبر PayPal', ['order' => $orderPublicId]);
             }
+            $activated = [$workspace, (string) $plan->slug];
 
             return true;
         });
+        // After commit: earned-but-unissued certificates are released by the plan gate (blueprint §4.13).
+        if ($settled && $activated !== null) {
+            SubscriptionActivated::dispatch($activated[0], $activated[1]);
+        }
+
+        return $settled;
     }
 }

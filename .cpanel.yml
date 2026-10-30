@@ -10,8 +10,9 @@ deployment:
     - cd $DEPLOYPATH && ( [ -f .env ] || cp /home/kcepljda/khaledsaad-next.env .env )
     - cd $DEPLOYPATH && $PHP $COMPOSER install --no-dev --optimize-autoloader --no-interaction --no-progress
     - cd $DEPLOYPATH && $PHP artisan migrate --force --no-interaction
-    - cd $DEPLOYPATH && ( [ -f storage/app/.seeded ] || ( $PHP artisan db:seed --force --no-interaction && touch storage/app/.seeded storage/app/.seeded-stage1 storage/app/.seeded-stage2 storage/app/.seeded-stage3 storage/app/.seeded-stage4 ) )
+    - cd $DEPLOYPATH && ( [ -f storage/app/.seeded ] || ( $PHP artisan db:seed --force --no-interaction && touch storage/app/.seeded storage/app/.seeded-stage1 storage/app/.seeded-stage2 storage/app/.seeded-stage3 storage/app/.seeded-stage4 storage/app/.seeded-stage4-completion ) )
     - cd $DEPLOYPATH && ( [ -f storage/app/.seeded-stage4 ] || ( $PHP artisan db:seed --class=CompleteAcademySeeder --force --no-interaction && touch storage/app/.seeded-stage4 ) )
+    - cd $DEPLOYPATH && ( [ -f storage/app/.seeded-stage4-completion ] || ( $PHP artisan db:seed --class=StageFourCompletionSeeder --force --no-interaction && touch storage/app/.seeded-stage4-completion ) )
     - cd $DEPLOYPATH && ( $PHP artisan storage:link || true )
     - cd $DEPLOYPATH && $PHP artisan optimize:clear && $PHP artisan optimize
     - cd $DEPLOYPATH && chmod -R u+rwX storage bootstrap/cache

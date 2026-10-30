@@ -17,6 +17,7 @@ use App\Domain\Insights\Models\ContentReport;
 use App\Domain\Insights\Services\EventRecorder;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Models\ToolOutput;
+use App\Domain\Lab\Services\LabCatalog;
 use App\Domain\Lab\Services\QualityChecker;
 use App\Domain\Workspace\Models\Project;
 use App\Http\Controllers\Controller;
@@ -83,7 +84,9 @@ class LessonController extends Controller
             'journal' => $journal, 'checkin' => $checkin, 'savedAsset' => $savedAsset, 'answered' => $answered, 'completed' => $completed,
             'courseProgress' => $courseProgress, 'member' => (bool) $user, 'coachEnabled' => LessonCoach::enabled() && $user,
             'coachAnswer' => session('coach.answer.'.$lesson->id), 'parts' => Lesson::PARTS, 'channels' => Catalog::CHANNELS,
-            'relatedTool' => Tool::query()->where('is_published', true)->where('course_slug', $course->slug)->first(),
+            // Part 8 "الأداة": the path's designated lab tool, else any published tool that declares this course.
+            'relatedTool' => Tool::query()->where('is_published', true)->where('slug', (string) LabCatalog::toolSlugForCourse($course->slug))->first()
+                ?? Tool::query()->where('is_published', true)->where('course_slug', $course->slug)->first(),
             'relatedArticle' => ContentItem::published()->when($course->topic, fn ($q) => $q->where('topic', 'like', '%'.$course->topic.'%'))->latest('published_at')->first() ?? ContentItem::published()->latest('published_at')->first(),
             'structuredJson' => json_encode([
                 '@context' => 'https://schema.org', '@type' => 'LearningResource', 'name' => $lesson->title, 'description' => $lesson->objective,

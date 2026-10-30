@@ -56,7 +56,7 @@
             <li><span>النسخة الاحتياطية</span><b>{{ $operations['backup'] ?? 'لا علامة' }}</b></li>
             <li><span>PayPal</span><b>{{ $operations['paypal'] ? 'مهيأ' : 'غير مهيأ' }}</b></li><li><span>AI</span><b>{{ $operations['ai'] ? 'مفتاح موجود' : 'بلا مفتاح' }}</b></li>
             <li><span>أعضاء جدد (30 يوماً)</span><b>{{ $operations['new_users'] }} · تحقق البريد {{ $operations['verified_rate'] === null ? '—' : $operations['verified_rate'].'٪' }}</b></li>
-        </ul><div class="row"><a class="btn btn-text" href="{{ route('admin.operations') }}">الأعضاء والأدوار والخطط والتحويلات والتدقيق ←</a></div></div>
+        </ul><div class="row"><a class="btn btn-text" href="{{ route('admin.users.index') }}">الأعضاء والأدوار</a><a class="btn btn-text" href="{{ route('admin.plans.index') }}">الخطط والدفع</a><a class="btn btn-text" href="{{ route('admin.redirects.index') }}">التحويلات</a><a class="btn btn-text" href="{{ route('admin.audit.index') }}">سجل التدقيق</a><a class="btn btn-text" href="{{ route('admin.operations') }}">الصحة والتشغيل ←</a></div></div>
     </div>
 </div></section>
 <div id="cmdk" class="cmdk" hidden><div><label class="sr-only" for="cmdk-q">ابحث واقفز إلى أي كيان</label><input id="cmdk-q" placeholder="ابحث: درس، مسار، أداة، شاشة إدارة…" autocomplete="off"><ul id="cmdk-list">@foreach($palette as $item)<li><a href="{{ $item['url'] }}"><span>{{ $item['label'] }}</span><small>{{ $item['kind'] }}</small></a></li>@endforeach</ul></div></div>

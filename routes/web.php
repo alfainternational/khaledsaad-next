@@ -2,13 +2,17 @@
 
 use App\Http\Controllers\Admin\AcademyController as AdminAcademyController;
 use App\Http\Controllers\Admin\AssessmentController as AdminAssessmentController;
+use App\Http\Controllers\Admin\AuditController;
+use App\Http\Controllers\Admin\ContactMessagesController;
 use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\ControlRoomController;
 use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\RedirectsController;
 use App\Http\Controllers\Admin\SourcesController;
 use App\Http\Controllers\Admin\TaxonomyController;
 use App\Http\Controllers\Admin\ToolStudioController;
+use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\App\BillingController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\LessonCompletionController;
@@ -184,9 +188,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/admin/sources/items/{item}/ignore', [SourcesController::class, 'ignore'])->name('admin.sources.ignore');
     Route::patch('/admin/sources/feeds/{feed}', [SourcesController::class, 'toggleFeed'])->name('admin.sources.feeds.toggle');
     Route::get('/admin/operations', [OperationsController::class, 'index'])->name('admin.operations');
-    Route::post('/admin/redirects', [OperationsController::class, 'storeRedirect'])->name('admin.redirects.store');
-    Route::delete('/admin/redirects/{redirect}', [OperationsController::class, 'destroyRedirect'])->name('admin.redirects.destroy');
+    // الشاشات القياسية (§6.5): المستخدمون والأدوار، الخطط والدفع، التحويلات (+CSV)، سجل التدقيق.
+    Route::get('/admin/users', [UsersController::class, 'index'])->name('admin.users.index');
+    Route::patch('/admin/users/{user}', [UsersController::class, 'updateRole'])->name('admin.users.update');
+    Route::post('/admin/users/{user}/impersonate', [UsersController::class, 'impersonate'])->name('admin.users.impersonate');
+    Route::post('/admin/impersonation/stop', [UsersController::class, 'stopImpersonation'])->withoutMiddleware('verified')->name('admin.impersonation.stop');
+    Route::get('/admin/plans', [PlanController::class, 'index'])->name('admin.plans.index');
+    Route::get('/admin/redirects', [RedirectsController::class, 'index'])->name('admin.redirects.index');
+    Route::post('/admin/redirects/import', [RedirectsController::class, 'import'])->name('admin.redirects.import');
+    Route::post('/admin/redirects', [RedirectsController::class, 'store'])->name('admin.redirects.store');
+    Route::delete('/admin/redirects/{redirect}', [RedirectsController::class, 'destroy'])->whereNumber('redirect')->name('admin.redirects.destroy');
+    Route::get('/admin/audit', [AuditController::class, 'index'])->name('admin.audit.index');
     Route::patch('/admin/plans/{plan}', [PlanController::class, 'update'])->name('admin.plans.update');
+    // رسائل الاتصال (§4.13): كل رسالة مسجّلة في قاعدة البيانات مع حالتها.
+    Route::get('/admin/contact-messages', [ContactMessagesController::class, 'index'])->name('admin.contact-messages.index');
+    Route::patch('/admin/contact-messages/{message}', [ContactMessagesController::class, 'update'])->whereNumber('message')->name('admin.contact-messages.update');
 
     // استوديو الأداة (§6.4)
     Route::get('/admin/tools', [ToolStudioController::class, 'index'])->name('admin.tools.index');

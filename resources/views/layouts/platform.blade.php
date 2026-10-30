@@ -3,7 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#071b2d">
+    <meta name="theme-color" content="#FFFDF8" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0B1623" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#FFFDF8" data-theme-color>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('platform.name').' — '.config('platform.tagline'))</title>
     <meta name="description" content="@yield('description', 'أثر: تعلّم التسويق والذكاء الاصطناعي بالممارسة. كل درس ينتهي بأصل لمشروعك أنت، وكل أصل يُقاس في الواقع.')">
@@ -28,6 +30,9 @@
 <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
 @if($viewer->previewAs())
 <div class="preview-banner">تعرض المنصة الآن كـ «{{ $viewer->previewLabel() }}» (معاينة إدارية). <form method="post" action="{{ route('admin.preview', ['as' => 'off']) }}">@csrf<button type="submit">إنهاء المعاينة</button></form></div>
+@endif
+@if($viewer->impersonating())
+<div class="preview-banner" data-impersonation>تعرض المنصة الآن كالمستخدم «{{ $viewer->user()->name }}» — <form method="post" action="{{ route('admin.impersonation.stop') }}">@csrf<button type="submit">إنهاء</button></form></div>
 @endif
 <header class="site-header"><div class="shell nav-wrap">
     <a class="brand" href="{{ route('home') }}" aria-label="أثر — الرئيسية"><span class="brand-mark">أ</span><span>أثر</span></a>
@@ -81,7 +86,8 @@
   var th=d.querySelector('.theme-toggle');
   function cur(){var a=root.getAttribute('data-theme');if(a)return a;return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
   var systemTheme=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');
-  function applyTheme(value){root.setAttribute('data-theme',value);if(th)th.setAttribute('aria-pressed',String(value==='dark'))}
+  var tc=d.querySelector('meta[data-theme-color]');
+  function applyTheme(value){root.setAttribute('data-theme',value);if(th)th.setAttribute('aria-pressed',String(value==='dark'));if(tc)tc.setAttribute('content',value==='dark'?'#0B1623':'#FFFDF8')}
   function savedTheme(){try{return localStorage.getItem('athar-theme')}catch(e){return null}}
   if(th){applyTheme(cur());th.addEventListener('click',function(){var nx=cur()==='dark'?'light':'dark';applyTheme(nx);try{localStorage.setItem('athar-theme',nx)}catch(e){}})}
   if(systemTheme&&systemTheme.addEventListener)systemTheme.addEventListener('change',function(e){var saved=savedTheme();if(saved!=='dark'&&saved!=='light')applyTheme(e.matches?'dark':'light')});

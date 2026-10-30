@@ -185,6 +185,8 @@ class LessonFlowTest extends TestCase
         }
         $this->assertSame(6, DB::table('activity_completions')->where('user_id', $user->id)->count());
         $this->assertDatabaseMissing('certificates', ['user_id' => $user->id]);
+        // Certificates belong to the professional plan (blueprint §4.13): the same subscription that grants AI credits.
+        DB::table('subscriptions')->insert(['workspace_id' => $user->workspaces()->first()->id, 'plan' => 'pro', 'status' => 'active', 'ends_at' => now()->addMonth(), 'created_at' => now(), 'updated_at' => now()]);
 
         $url = route('academy.lesson', [$this->course, $this->lesson]);
         $this->actingAs($user)->post($url.'/checkin', ['mode' => 'commit', 'action' => 'جولة'])->assertRedirect();

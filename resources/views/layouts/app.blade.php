@@ -1,12 +1,8 @@
+{{-- Legacy Breeze wrapper kept only for the unused dashboard.blade.php; every live member page extends layouts.platform directly. --}}
 @extends('layouts.platform')
-@section('title', request()->routeIs('app.billing') ? 'الاشتراك والأرصدة — أثر' : 'حسابي — أثر')
+@section('title', 'حسابي — أثر')
 @section('noindex', '1')
-@push('before-styles')
-@vite(['resources/css/app.css', 'resources/js/app.js'])
-@endpush
 @section('content')
-<div class="legacy-app-area">
 @isset($header)<header class="app-hero"><div class="shell">{{ $header }}</div></header>@endisset
-{{ $slot }}
-</div>
+<div class="shell">{{ $slot }}</div>
 @endsection

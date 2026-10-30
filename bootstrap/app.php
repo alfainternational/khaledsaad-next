@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ImpersonationGuard;
 use App\Http\Middleware\RedirectLegacyUrls;
 use App\Http\Middleware\RequestContext;
 use App\Http\Middleware\SecurityHeaders;
@@ -16,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(RequestContext::class);
         $middleware->append(RedirectLegacyUrls::class);
-        $middleware->web(append: [SecurityHeaders::class]);
+        $middleware->web(append: [SecurityHeaders::class, ImpersonationGuard::class]);
         $middleware->validateCsrfTokens(except: ['webhooks/payments']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

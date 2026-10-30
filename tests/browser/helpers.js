@@ -10,6 +10,13 @@ export function memberFor(testInfo) {
     return testInfo.project.name === 'mobile' ? MOBILE_MEMBER : MEMBER;
 }
 
+/** Stage-4 certificate journey: a professional-plan learner with five of six lessons already complete (BrowserTestSeeder). */
+export function certificateMemberFor(testInfo) {
+    return testInfo.project.name === 'mobile'
+        ? { email: 'browser-cert-mobile@example.invalid', password: 'BrowserPass!2026' }
+        : { email: 'browser-cert@example.invalid', password: 'BrowserPass!2026' };
+}
+
 /** Fails the test if the page is wider than its viewport (horizontal overflow). */
 export async function expectNoHorizontalOverflow(page, label = page.url()) {
     // Measure only once stylesheets and fonts are applied: right after a redirect the unstyled DOM is wider.

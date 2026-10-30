@@ -5,13 +5,12 @@ namespace App\Domain\Academy\Services;
 use App\Domain\Academy\Models\Certificate;
 use App\Domain\Academy\Models\Course;
 use App\Domain\Academy\Models\Lesson;
-use App\Domain\Academy\Models\RealWorldCheckin;
 use App\Domain\Insights\Models\LearnerEvent;
 use App\Domain\Lab\Models\ToolOutput;
+use App\Events\CourseCompleted;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * Progress, completion rules and certificates (blueprint §4.5 "الإكمال", §5.1, §5.2).
@@ -78,28 +77,20 @@ class ProgressService
         return true;
     }
 
+    /**
+     * When the course is earned (all lessons + a real result) the CourseCompleted event fires and the
+     * IssueCertificate listener issues the certificate under the plan gate (blueprint §4.13).
+     * Returns true when a valid certificate exists after the call.
+     */
     public function maybeIssueCertificate(User $user, Course $course): bool
     {
-        if (! $course->is_published) {
+        $issuer = app(CertificateIssuer::class);
+        if (! $issuer->earned($user, $course)) {
             return false;
         }
-        $progress = $this->courseProgress($user, $course);
-        if (! $progress['is_complete']) {
-            return false;
-        }
-        $hasRealResult = RealWorldCheckin::query()->where('user_id', $user->id)->where('mode', 'commit')->whereNotNull('result')->whereNotNull('recorded_at')
-            ->whereIn('lesson_id', $course->lessons()->pluck('id'))->get()
-            ->contains(fn (RealWorldCheckin $checkin) => collect($checkin->result ?? [])->except(['note', 'practice'])->contains(fn ($value) => filled($value)));
-        if (! $hasRealResult) {
-            return false;
-        }
-        // firstOrCreate handles concurrent issuance via the existing user/course unique key.
-        $certificate = Certificate::query()->firstOrCreate(
-            ['user_id' => $user->id, 'course_id' => $course->id],
-            ['verification_code' => (string) Str::uuid(), 'issued_at' => now()]
-        );
+        CourseCompleted::dispatch($user, $course);
 
-        return $certificate->revoked_at === null;
+        return Certificate::query()->where('user_id', $user->id)->where('course_id', $course->id)->whereNull('revoked_at')->exists();
     }
 
     /** The lesson the learner touched last (for "أكمل من حيث توقفت"). */

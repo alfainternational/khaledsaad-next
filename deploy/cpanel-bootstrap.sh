@@ -78,7 +78,7 @@ echo "==> Migrating"
 "$PHP" artisan migrate --force --no-interaction
 if [ ! -f storage/app/.seeded ]; then
     echo "==> Seeding (first run only)"
-    "$PHP" artisan db:seed --force --no-interaction && touch storage/app/.seeded storage/app/.seeded-stage1 storage/app/.seeded-stage2 storage/app/.seeded-stage3 storage/app/.seeded-stage4
+    "$PHP" artisan db:seed --force --no-interaction && touch storage/app/.seeded storage/app/.seeded-stage1 storage/app/.seeded-stage2 storage/app/.seeded-stage3 storage/app/.seeded-stage4 storage/app/.seeded-stage4-completion
 fi
 # Stage-1 learning content (programs, 12 paths, the 6-lesson foundations course, diagnosis questions) is imported once;
 # later edits live in the admin studio, so the seeders never run again automatically.
@@ -102,6 +102,11 @@ fi
 if [ ! -f storage/app/.seeded-stage4 ]; then
     echo "==> Importing stage-4 courses (once)"
     "$PHP" artisan db:seed --class=CompleteAcademySeeder --force --no-interaction && touch storage/app/.seeded-stage4
+fi
+# Stage-4 completion: routing rules for all twelve paths (updateOrCreate by audience × level × dimension; lessons matched by slug).
+if [ ! -f storage/app/.seeded-stage4-completion ]; then
+    echo "==> Importing stage-4 completion rules (once)"
+    "$PHP" artisan db:seed --class=StageFourCompletionSeeder --force --no-interaction && touch storage/app/.seeded-stage4-completion
 fi
 "$PHP" artisan storage:link >/dev/null 2>&1 || true
 echo "==> Caching"
