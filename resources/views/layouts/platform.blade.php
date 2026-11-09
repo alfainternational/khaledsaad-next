@@ -109,6 +109,11 @@
   nl&&nl.addEventListener('submit',function(e){if(!window.fetch||nlFallback)return;e.preventDefault();var btn=nl.querySelector('button');btn.disabled=true;
     fetch(nl.action,{method:'POST',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:new FormData(nl)}).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})}).then(function(x){ns.hidden=false;ns.textContent=x.ok?x.j.message:(x.j.message||(x.j.errors&&x.j.errors.email&&x.j.errors.email[0])||'تعذر الاشتراك الآن.');ns.classList.toggle('is-error',!x.ok);if(x.ok)nl.reset()}).catch(function(){nlFallback=true;nl.submit()}).finally(function(){btn.disabled=false})});
   d.addEventListener('click',function(e){d.querySelectorAll('details.account-menu[open]').forEach(function(m){if(!m.contains(e.target))m.removeAttribute('open')})});
+  // One header menu at a time: opening the account menu closes the main nav (they overlap on narrow screens), and Escape closes both.
+  function closeNav(){if(t&&n){t.setAttribute('aria-expanded','false');n.classList.remove('is-open')}}
+  var am=d.querySelector('details.account-menu');
+  am&&am.addEventListener('toggle',function(){if(am.open)closeNav()});
+  d.addEventListener('keydown',function(e){if(e.key==='Escape'){closeNav();am&&am.removeAttribute('open')}});
   window.atharEvent=function(name,meta){try{var b=new Blob([JSON.stringify({event:name,meta:meta||{},_token:d.querySelector('meta[name=csrf-token]').content})],{type:'application/json'});if(navigator.sendBeacon){navigator.sendBeacon('{{ route('events.store') }}',b)}else{fetch('{{ route('events.store') }}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':d.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({event:name,meta:meta||{}}),keepalive:true})}}catch(e){}};
 })();
 </script>

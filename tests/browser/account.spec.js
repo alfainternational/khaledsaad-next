@@ -83,6 +83,31 @@ test.describe('الحساب ومساحة العمل', () => {
         expect(errors).toEqual([]);
     });
 
+    test('قائمة الحساب وقائمة التنقل لا تبقيان مفتوحتين معاً', async ({ page, isMobile }) => {
+        test.skip(! isMobile, 'قائمة التنقل تُطوى على الشاشات الضيقة فقط');
+        const errors = trackErrors(page);
+        await login(page, MEMBER);
+
+        const toggle = page.locator('.nav-toggle');
+        const nav = page.locator('#main-nav');
+        const account = page.locator('details.account-menu');
+
+        await toggle.click();
+        await expect(nav).toBeVisible();
+        await account.locator('summary').click();
+        await expect(account).toHaveAttribute('open', '');
+        await expect(nav).toBeHidden();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+        // والعكس: فتح قائمة التنقل يغلق قائمة الحساب، وEscape يغلق المفتوحة.
+        await toggle.click();
+        await expect(nav).toBeVisible();
+        await expect(account).not.toHaveAttribute('open', '');
+        await page.keyboard.press('Escape');
+        await expect(nav).toBeHidden();
+        expect(errors).toEqual([]);
+    });
+
     test('تسجيل الخروج من قائمة الحساب يعيد إلى الصفحة العامة', async ({ page }) => {
         const errors = trackErrors(page);
         await login(page, MEMBER);
