@@ -101,6 +101,8 @@ test.describe('المرحلة الرابعة: الاكتمال', () => {
         await page.locator('#lab-form button[type=submit]').first().click();
         await expect(page.locator('#asset')).toContainText('موجز بحث الجمهور');
         await page.locator('#asset [data-action="save"]').click();
+        // Saving submits a form and reloads the page: wait for it, or the answers below race the navigation.
+        await expect(page.locator('.alert-success')).toContainText('حُفظ الأصل');
         const questions = page.locator('#part-questions .dq');
         await expect(questions).toHaveCount(3);
         for (let i = 0; i < 3; i++) {
