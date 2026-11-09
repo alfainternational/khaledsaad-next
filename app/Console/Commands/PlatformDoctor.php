@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\PublicSiteController;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -43,9 +44,8 @@ class PlatformDoctor extends Command
             $checks['worker heartbeat'] = (int) Cache::get('platform:worker_heartbeat', 0) >= now()->subMinutes(10)->timestamp;
             $checks['scheduler heartbeat'] = (int) Cache::get('platform:scheduler_heartbeat', 0) >= now()->subMinutes(10)->timestamp;
             $checks['transactional mail'] = ! in_array(config('mail.default'), ['log', 'array'], true);
-            $checks['sitemap renderable'] = rescue(fn () => view('site.sitemap', [
-                'articles' => collect(), 'courses' => collect(), 'tools' => collect(),
-            ])->render() !== '', false);
+            // Through the real controller action, so the check cannot drift from the data the sitemap view expects.
+            $checks['sitemap renderable'] = rescue(fn () => str_contains((string) app(PublicSiteController::class)->sitemap()->getContent(), '<urlset'), false);
             $backupMarker = (string) config('platform.backup_marker');
             $checks['recent backup'] = $backupMarker !== '' && is_file($backupMarker) && filemtime($backupMarker) >= now()->subDay()->timestamp;
 

@@ -168,4 +168,10 @@ class OperationalFlowsTest extends TestCase
     {
         $this->artisan('platform:doctor --env=testing')->assertSuccessful();
     }
+
+    public function test_platform_doctor_renders_the_real_sitemap_in_production_checks(): void
+    {
+        // Other production-only requirements (https, async queue…) fail under the test config; this asserts the sitemap line alone.
+        $this->artisan('platform:doctor --env=production')->expectsOutputToContain('[PASS] sitemap renderable');
+    }
 }
