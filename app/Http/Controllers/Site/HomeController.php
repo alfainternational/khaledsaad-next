@@ -45,8 +45,8 @@ class HomeController extends Controller
             'numbers' => $this->liveNumbers($engine),
             'courses' => Course::query()->where('is_published', true)->orderBy('position')->limit(3)->get()
                 ->concat(Course::query()->where('is_published', false)->orderBy('position')->limit(3)->get())->take(3),
-            'tools' => Tool::query()->where('is_published', true)->limit(3)->get(),
-            'articles' => ContentItem::published()->latest('published_at')->limit(3)->get(),
+            'tools' => Tool::query()->where('is_published', true)->where('kind', 'generator')->where('slug', '!=', 'lesson-lab')->orderBy('position')->limit(3)->get(),
+            'articles' => ContentItem::published()->with('relatedTool')->latest('published_at')->limit(3)->get(),
             'firstLesson' => Lesson::query()->whereNotNull('published_at')->with('course')->orderBy('position')->first(),
         ]);
     }

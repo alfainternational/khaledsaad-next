@@ -26,7 +26,7 @@ class OperationsController extends Controller
                 'queue_pending' => rescue(fn () => DB::table('jobs')->count(), 0),
                 'queue_failed' => rescue(fn () => DB::table('failed_jobs')->count(), 0),
                 'backup' => (string) config('platform.backup_marker') !== '' && is_file((string) config('platform.backup_marker')) ? date('Y/m/d H:i', filemtime((string) config('platform.backup_marker'))) : null,
-                'paypal' => filled(config('services.paypal.client_id')), 'ai' => filled(config('services.openai.key')),
+                'paypal' => filled(config('services.paypal.client_id')), 'ai' => app(\App\Domain\Lab\Services\AiGateway::class)->enabled(),
             ],
             'stats' => [
                 'payments' => DB::table('payments')->count(),

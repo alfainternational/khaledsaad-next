@@ -4,6 +4,7 @@ namespace App\Domain\Lab\Services;
 
 use App\Domain\Lab\Models\Experiment;
 use App\Domain\Lab\Models\Tool;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -13,6 +14,12 @@ use Illuminate\Support\Facades\DB;
  */
 class StudioMetrics
 {
+    /** Minimum exposures per variant before an A/B result may be called significant. */
+    public const MIN_EXPOSURES = 100;
+
+    /** Two-sided significance level for adopting a winner automatically. */
+    public const ALPHA = 0.05;
+
     /** @return array<int, array{generated:int, saved:int, rate:?int}> keyed by tool id */
     public function saveRates(): array
     {
@@ -53,5 +60,64 @@ class StudioMetrics
         }
 
         return $rates;
+    }
+
+    /** Save rate of one tool inside a period (the credit-economy widget, blueprint §6.1 slot 7). */
+    public function toolSaveRate(int $toolId, ?CarbonInterface $since = null): array
+    {
+        $generated = DB::table('learner_events')->whereIn('event', ['tool.generated', 'tool.enhanced'])->where('tool_id', $toolId)
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->count();
+        $saved = DB::table('tool_outputs')->where('tool_id', $toolId)->whereNull('lesson_id')->where('payload', 'not like', '%"illustrative":true%')
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->count();
+
+        return ['generated' => $generated, 'saved' => $saved, 'rate' => $generated > 0 ? (int) round(min($saved, $generated) / $generated * 100) : null];
+    }
+
+    /**
+     * Statistical significance of a running A/B (blueprint §6.1 slot 5): a pooled two-proportion z-test on the save rate
+     * (converted ÷ exposed) of the two variants. It is only "ready" once every variant has MIN_EXPOSURES exposures, and
+     * "significant" when the two-sided p-value is below ALPHA; the winner is then the variant with the higher rate.
+     *
+     * @return array{ready:bool, significant:bool, z:?float, p:?float, min_sample:int, samples:array<int,int>, rates:array<int,array>, winner_variant_id:?int, leader_variant_id:?int}
+     */
+    public function significance(Experiment $experiment): array
+    {
+        $rates = $this->experimentRates($experiment);
+        $samples = array_map(fn (array $r) => $r['exposed'], $rates);
+        $result = ['ready' => false, 'significant' => false, 'z' => null, 'p' => null, 'min_sample' => self::MIN_EXPOSURES, 'samples' => $samples, 'rates' => $rates, 'winner_variant_id' => null, 'leader_variant_id' => null];
+        if (count($rates) !== 2) {
+            return $result;
+        }
+        [$idA, $idB] = array_keys($rates);
+        [$a, $b] = array_values($rates);
+        if ($a['exposed'] < 1 || $b['exposed'] < 1) {
+            return $result;
+        }
+        $pA = $a['converted'] / $a['exposed'];
+        $pB = $b['converted'] / $b['exposed'];
+        $result['leader_variant_id'] = $pA === $pB ? null : ($pA > $pB ? $idA : $idB);
+        $result['ready'] = min($a['exposed'], $b['exposed']) >= self::MIN_EXPOSURES;
+        $pooled = ($a['converted'] + $b['converted']) / ($a['exposed'] + $b['exposed']);
+        $se = sqrt($pooled * (1 - $pooled) * (1 / $a['exposed'] + 1 / $b['exposed']));
+        if ($se <= 0.0) {
+            return $result;
+        }
+        $z = ($pA - $pB) / $se;
+        $p = self::erfc(abs($z) / M_SQRT2);
+        $result['z'] = round($z, 3);
+        $result['p'] = round($p, 4);
+        $result['significant'] = $result['ready'] && $p < self::ALPHA;
+        $result['winner_variant_id'] = $result['significant'] ? $result['leader_variant_id'] : null;
+
+        return $result;
+    }
+
+    /** Complementary error function (Abramowitz–Stegun 7.1.26, |error| < 1.5e-7): two-sided normal p-value = erfc(|z| / √2). */
+    private static function erfc(float $x): float
+    {
+        $t = 1 / (1 + 0.3275911 * $x);
+        $poly = $t * (0.254829592 + $t * (-0.284496736 + $t * (1.421413741 + $t * (-1.453152027 + $t * 1.061405429))));
+
+        return max(0.0, min(1.0, $poly * exp(-$x * $x)));
     }
 }

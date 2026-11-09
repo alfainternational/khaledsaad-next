@@ -11,6 +11,8 @@ topic: integrated-marketing-plan
 tool: campaign-brief-builder
 reading_minutes: 8
 published_at: 2026-09-23
+last_reviewed_at: 2026-10-30
+editorial_revision: reading-2026-10
 eyebrow: رؤية عالمية
 excerpt: تقرير HubSpot السنوي لحالة التسويق يرسم اتجاهات المسوقين عالمياً — الفيديو القصير، الذكاء الاصطناعي، البيانات. نفرز ما يصلح لخطة شركة عربية وما هو ضجيج يخص أسواقاً أخرى.
 tldr: تقرير HubSpot لحالة التسويق مسح واسع للمسوقين يُظهر صعود الفيديو القصير كأعلى القنوات عائداً معلناً، وتوسع استخدام الذكاء الاصطناعي، وتحوّل القلق نحو البيانات المتفرقة. انسخ منه الأسئلة لا الإجابات، لأن عينته وقنواته تختلف عن سوقك.
@@ -19,12 +21,10 @@ sources:
   - publisher: HubSpot
     title: The State of Marketing Report
     url: https://www.hubspot.com/state-of-marketing
-    date: 2025-02-01
     language: en
   - publisher: Content Marketing Institute
     title: Content Marketing Research
     url: https://contentmarketinginstitute.com/research/
-    date: 2024-10-15
     language: en
 faq:
   - q: هل يعني صدارة الفيديو القصير أن على كل شركة عربية إنتاجه؟

@@ -9,6 +9,7 @@
     <div class="split"><div><x-athar.kicker>{{ $item->publisherName() }} · {{ strtoupper($item->language) }}@if($item->published_on) · {{ $item->published_on->format('Y/m/d') }}@endif · درجة الصلة {{ $item->relevance_score }}</x-athar.kicker><h1 style="font-size:26px">{{ $item->title }}</h1><a class="small" dir="ltr" href="{{ $item->url }}" target="_blank" rel="noopener nofollow">{{ Str::limit($item->url, 90) }}</a></div>
         <span class="status-pill" data-stage="{{ $item->stage }}" style="font-size:14px;padding:8px 14px">{{ $labels[$item->stage] }}</span></div>
     <ol class="filters" aria-label="البوابات" style="margin-top:14px">@foreach($gates as $i => $g)<li style="list-style:none"><a href="#gate-{{ $g }}" @if($item->stage === $g) aria-current="page" @endif>{{ $i + 1 }}. {{ $labels[$g] }}</a></li>@endforeach</ol>
+    @include('admin.partials.nav')
 </div></section>
 <section class="section-tight"><div class="shell source-detail">
     <div class="stack" style="gap:18px">

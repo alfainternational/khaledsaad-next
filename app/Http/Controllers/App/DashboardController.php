@@ -31,12 +31,14 @@ class DashboardController extends Controller
         $last = $this->progress->lastLesson($user);
         $started = $this->progress->coursesStarted($user)->map(fn (Course $c) => ['course' => $c, 'progress' => $this->progress->courseProgress($user, $c)]);
         $assessment = AssessmentResult::query()->where('user_id', $user->id)->latest()->first();
-        $assets = ToolOutput::query()->where('user_id', $user->id)->with('lesson')->latest()->limit(5)->get();
+        $assets = ToolOutput::query()->where('user_id', $user->id)->with(['lesson', 'project'])->latest()->limit(5)->get();
         $checkins = RealWorldCheckin::query()->where('user_id', $user->id)->with('lesson.course')->latest()->get();
         $pending = $checkins->where('mode', 'commit')->whereNull('recorded_at');
         $completedCount = DB::table('activity_completions')->where('user_id', $user->id)->whereNotNull('lesson_id')->count();
         $balance = (int) DB::table('credit_entries')->whereIn('workspace_id', $workspaceIds)->sum('amount');
-        $subscription = DB::table('subscriptions')->whereIn('workspace_id', $workspaceIds)->first();
+        // The paid plan counts only while its period is live; otherwise the dashboard says «مجاني».
+        $subscription = DB::table('subscriptions')->whereIn('workspace_id', $workspaceIds)->where('status', 'active')->where('plan', '!=', 'free')
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))->first();
         $activity = LearnerEvent::query()->where('user_id', $user->id)->with('lesson')->latest('created_at')->limit(8)->get();
 
         // Derived weekly plan: next lesson, due check-ins, re-assess, commit after completion.

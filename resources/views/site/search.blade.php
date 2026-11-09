@@ -3,6 +3,7 @@
 @section('noindex', '1')
 @section('content')
 <section class="page-hero compact"><div class="shell">
+    <x-athar.breadcrumbs :items="[['البحث', null]]" />
     <x-athar.kicker>البحث</x-athar.kicker>
     <h1>{{ $term !== '' ? 'نتائج البحث' : 'ابحث في المنصة' }}</h1>
     <form class="search-form" action="{{ route('search') }}" role="search"><label class="sr-only" for="q">ابحث</label><input class="input" id="q" name="q" value="{{ $term }}" placeholder="درس، أداة، مادة، أو مصطلح…" autofocus><button class="btn btn-primary" type="submit">بحث</button></form>

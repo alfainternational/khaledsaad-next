@@ -63,3 +63,5 @@ Schedule::command('platform:compute-quality-signals')->hourly()->withoutOverlapp
 Schedule::command('platform:send-checkin-reminders')->dailyAt('08:00')->withoutOverlapping();
 // المرحلة 3 (§6.3): capture gate — the 14 watched sources are polled once a day; unreachable feeds never fail the run.
 Schedule::command('platform:fetch-sources')->dailyAt('05:30')->withoutOverlapping();
+// §6.1 slot 5: a running A/B is adopted automatically once its save-rate difference is statistically significant.
+Schedule::command('platform:evaluate-experiments')->hourly()->withoutOverlapping();

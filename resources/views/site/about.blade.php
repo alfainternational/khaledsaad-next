@@ -1,9 +1,12 @@
 @extends('layouts.platform')
 @section('title','عن أثر وخالد سعد')
 @section('description', 'منهجية أثر للتعلّم والتطبيق والقياس، ومن يقف خلف المنصة، وسياسات التحرير والترجمة واستخدام الذكاء الاصطناعي.')
+@section('body_class', 'reading-surface')
 @section('content')
-<section class="page-hero"><div class="shell"><x-athar.breadcrumbs :items="[['عن أثر', null]]" /><span class="kicker">لماذا أثر؟</span><h1>معرفة تتحول إلى عمل يمكن قياسه</h1><p>منصة عربية يقودها خالد سعد لأصحاب المشاريع والمسوّقين.</p></div></section>
-<section class="section-tight"><div class="shell article-layout"><article class="article-body">
+<x-athar.schema :data="['@type' => 'AboutPage', 'name' => html_entity_decode(trim($__env->yieldContent('title')), ENT_QUOTES), 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => url()->current(), 'inLanguage' => 'ar', 'isPartOf' => ['@type' => 'WebSite', 'name' => 'أثر', 'url' => route('home')], 'about' => ['@type' => 'Organization', 'name' => 'أثر', 'url' => route('home')]]" />
+<article class="reading-page reading-page--about reading-page--focused">
+<header class="article-hero reading-hero"><div class="reading-frame"><x-athar.breadcrumbs :items="[['عن أثر', null]]" /><span class="kicker">لماذا أثر؟</span><h1>معرفة تتحول إلى عمل يمكن قياسه</h1><p class="lead">منصة عربية يقودها خالد سعد لأصحاب المشاريع والمسوّقين.</p></div></header>
+<section class="section-tight"><div class="reading-width"><div class="article-body">
 <h2>قصتنا</h2>
 <p>تبدأ أثر من سؤال بسيط: ماذا سيتغير في مشروعك بعدما تتعلّم؟ يمكن أن تقرأ كثيرًا عن التسويق وتظل محتارًا في أول قرار. لذلك ربطنا المعرفة بخطوة تطبيق محددة.</p>
 <p>صاحب المشروع يحتاج إلى اختيار جمهوره وصياغة عرضه وتحديد قناة تناسب موارده. والمسوّق يحتاج إلى فهم أعمق وأصول يشاركها مع فريقه أو عميله. لهذا بنينا برنامجين يجمعهما منهج واحد.</p>
@@ -14,5 +17,6 @@
 <h2>من يقف خلف أثر؟</h2><p>خالد سعد، صاحب المنصة والمسؤول عن توجهها التحريري. تظهر أسماء الكتّاب والمراجعين وتواريخ مراجعة المواد داخل المجلة. للتعريف بالمساهمات أو تصحيح معلومة، استخدم <a href="{{ route('contact') }}">صفحة التواصل</a>.</p>
 <h2>سياسة التحرير والترجمة</h2><p>نبدأ بالمصادر الأولية ونوضح تاريخها، ونفصل المعلومة عن الرأي والمثال الافتراضي. الرؤى العالمية تقدم تلخيصًا وتحليلًا وسياقًا عربيًا مع رابط المصدر. تُستخدم الترجمة الكاملة فقط عند توفر إذن أو ترخيص مناسب.</p><p>نراجع المصطلحات والأرقام والروابط قبل النشر. البلاغ عن خطأ يصل إلى مسار المراجعة، وتُحدّث المادة وتاريخ مراجعتها عند التصحيح.</p>
 <h2>سياسة الذكاء الاصطناعي</h2><p>يمكن استخدام AI في إعداد المسودات والتحسين والتحليل، مع مراجعة بشرية قبل الاعتماد التحريري. مخرجات الأدوات اقتراحات تحتاج إلى تحقق من الحقائق والأرقام وملاءمة العلامة التجارية قبل نشرها.</p><p>عند اختيار ميزة تعمل بالذكاء الاصطناعي، يُرسل السياق اللازم لمعالجتها إلى مزوّد الخدمة. تجنّب إدخال أسرار العمل أو بيانات العملاء الحساسة، وراجع <a href="{{ route('privacy') }}">سياسة الخصوصية</a>.</p>
-</article><aside class="source-panel"><span class="kicker">ابدأ من مشروعك</span><h2>خطوة صغيرة، نتيجة واضحة</h2><p>اكتشف أولويتك ثم افتح الدرس والأداة المناسبين لها.</p><a class="btn btn-primary" href="{{ route('assess.start') }}">شخّص مشروعك</a></aside></div></section>
+</div><aside class="reading-application"><div><span class="kicker">ابدأ من مشروعك</span><h2>خطوة صغيرة، نتيجة واضحة</h2><p>اكتشف أولويتك ثم افتح الدرس والأداة المناسبين لها.</p></div><a class="btn btn-primary" href="{{ route('assess.start') }}">شخّص مشروعك ←</a></aside></div></section>
+</article>
 @endsection

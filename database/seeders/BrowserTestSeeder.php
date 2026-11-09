@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Domain\Academy\Models\Certificate;
 use App\Domain\Academy\Models\Course;
 use App\Domain\Commerce\Services\CreditLedger;
+use App\Domain\Content\Models\ContentItem;
 use App\Domain\Workspace\Models\Workspace;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -36,6 +37,12 @@ class BrowserTestSeeder extends Seeder
         if (app()->environment('production')) {
             throw new \RuntimeException('BrowserTestSeeder is only for local test databases.');
         }
+        ContentItem::create([
+            'slug' => 'browser-short-reading', 'title' => 'مادة قصيرة لاختبار القراءة',
+            'type' => 'article', 'status' => 'published', 'published_at' => '2000-01-01',
+            'author_name' => 'اختبار محلي', 'excerpt' => 'مثال محلي للتحقق من تخطيط المواد القصيرة.',
+            'body' => "قرار واحد واضح يخدم القارئ.\n\nاختر خطوة صغيرة وسجّل ما تغير بعدها.",
+        ]);
         foreach ([self::MEMBER_EMAIL => 'browser-member-space', self::MOBILE_MEMBER_EMAIL => 'browser-member-mobile-space'] as $email => $slug) {
             $member = User::query()->updateOrCreate(
                 ['email' => $email],

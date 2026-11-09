@@ -3,6 +3,7 @@
 namespace App\Domain\Content\Services;
 
 use App\Domain\Content\Models\SourceItem;
+use App\Domain\Lab\Ai\AiContext;
 use App\Domain\Lab\Services\AiGateway;
 use DomainException;
 use Illuminate\Support\Str;
@@ -17,7 +18,7 @@ class SourceSummarizer
 
     public static function aiEnabled(): bool
     {
-        return filled(config('services.openai.key'));
+        return app(AiGateway::class)->enabled();
     }
 
     /** @return array{text:string, mode:string} */
@@ -30,7 +31,8 @@ class SourceSummarizer
         try {
             $out = $this->ai->generate(
                 "العنوان: {$item->title}\nالناشر: {$item->publisherName()}\nالتاريخ: ".($item->published_on?->toDateString() ?? 'غير معروف')."\nالمقتطف: ".Str::limit((string) $item->excerpt, 1500, '')."\n\nاكتب ملخصاً عربياً خاماً للمحرر في 5 نقاط: ما الادعاء الرئيسي، ما الأرقام المذكورة ومصدرها الأولي إن وُجد، من يتأثر، ما الذي لا يقوله المصدر، وما السؤال الذي يجب أن تجيب عنه المادة العربية. لا تخترع أرقاماً.",
-                'أنت محرر عربي دقيق. المخرج مادة خام للكاتب ولن يُنشر كما هو. افصل ما ورد في المصدر عن استنتاجك، ولا تضف أرقاماً غير موجودة في المدخلات.'
+                'أنت محرر عربي دقيق. المخرج مادة خام للكاتب ولن يُنشر كما هو. افصل ما ورد في المصدر عن استنتاجك، ولا تضف أرقاماً غير موجودة في المدخلات.',
+                AiContext::internal('content:source-summary'),
             );
 
             return ['text' => $out['text']."\n\n— ملخص آلي (AI) للمراجعة؛ لا يُنشر كما هو.", 'mode' => 'ai'];

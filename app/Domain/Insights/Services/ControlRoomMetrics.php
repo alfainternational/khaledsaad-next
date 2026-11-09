@@ -6,7 +6,9 @@ use App\Domain\Academy\Models\Course;
 use App\Domain\Academy\Models\Lesson;
 use App\Domain\Insights\Models\ContentReport;
 use App\Domain\Insights\Models\LearnerEvent;
+use App\Domain\Insights\Models\LearnerNudge;
 use App\Domain\Insights\Models\QualitySignal;
+use App\Domain\Lab\Services\StudioMetrics;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -96,10 +98,37 @@ class ControlRoomMetrics
             ->selectRaw('e.user_id, users.name, users.email, max(e.created_at) as last_seen')->groupBy('e.user_id', 'users.name', 'users.email')
             ->havingRaw('max(e.created_at) < ?', [now()->subDays(7)->toDateTimeString()])->orderBy('last_seen')->limit(10)->get();
 
+        // Each stalled learner with the lesson they stopped in and the last «أصلك ينتظرك» reminder about it.
+        $cooldown = now()->subDays(LearnerNudge::COOLDOWN_DAYS);
+        foreach ($stalled as $row) {
+            $row->lesson_id = LearnerEvent::query()->where('user_id', $row->user_id)->whereNotNull('lesson_id')->orderByDesc('created_at')->orderByDesc('id')->value('lesson_id');
+            $row->last_nudge = LearnerNudge::query()->where('user_id', $row->user_id)->where('lesson_id', $row->lesson_id)->latest('id')->first();
+            $row->can_nudge = $row->lesson_id !== null && ! ($row->last_nudge && $row->last_nudge->status !== 'failed' && $row->last_nudge->created_at->gte($cooldown));
+        }
+        $this->recordNudgeReturns();
+        $recent = LearnerNudge::query()->where('created_at', '>=', now()->subDays(30));
+
         return [
             'stalled' => $stalled,
-            'reports' => ContentReport::query()->with('lesson')->where('status', 'open')->latest()->limit(10)->get(),
+            'reports' => ContentReport::query()->with(['lesson', 'contentItem'])->where('status', 'open')->latest()->limit(10)->get(),
+            'nudges' => ['sent' => (clone $recent)->where('status', '!=', 'failed')->count(), 'returned' => (clone $recent)->whereNotNull('returned_at')->count()],
         ];
+    }
+
+    /** The behavioural result of a nudge (§6.6): the learner's first lesson activity after it. Written once, when it first shows up. */
+    public function recordNudgeReturns(): int
+    {
+        $updated = 0;
+        $pending = LearnerNudge::query()->whereNull('returned_at')->where('status', '!=', 'failed')->where('created_at', '>=', now()->subDays(30))->limit(200)->get();
+        foreach ($pending as $nudge) {
+            $first = LearnerEvent::query()->where('user_id', $nudge->user_id)->whereNotNull('lesson_id')->where('created_at', '>', $nudge->created_at)->min('created_at');
+            if ($first !== null) {
+                $nudge->update(['returned_at' => $first]);
+                $updated++;
+            }
+        }
+
+        return $updated;
     }
 
     public function creditEconomy(int $days): array
@@ -110,10 +139,14 @@ class ControlRoomMetrics
         $credits = (int) (clone $aiRuns)->sum('tool_runs.used_credits');
         $revenue = (int) DB::table('payments')->where('status', 'paid')->where('created_at', '>=', $since)->sum('amount');
         $saved = DB::table('tool_outputs')->where('created_at', '>=', $since)->count();
-        $topTool = DB::table('tool_runs')->join('tools', 'tools.id', '=', 'tool_runs.tool_id')->where('tool_runs.created_at', '>=', $since)
-            ->selectRaw('tools.name, sum(tool_runs.used_credits) as credits, count(*) as runs')->groupBy('tools.name')->orderByDesc('credits')->first();
+        // The most expensive tool of the period = the one that consumed the most credits; its save rate tells whether that spend ends in kept assets.
+        $topTool = DB::table('tool_runs')->join('tools', 'tools.id', '=', 'tool_runs.tool_id')->where('tool_runs.created_at', '>=', $since)->where('tool_runs.used_credits', '>', 0)
+            ->selectRaw('tools.id, tools.name, sum(tool_runs.used_credits) as credits, count(*) as runs')->groupBy('tools.id', 'tools.name')->orderByDesc('credits')->orderBy('tools.id')->first();
 
-        return ['ai_runs' => $runs, 'credits' => $credits, 'revenue_cents' => $revenue, 'saved' => $saved, 'cost_per_saved' => $saved > 0 ? round($credits / $saved, 1) : null, 'top_tool' => $topTool];
+        return [
+            'ai_runs' => $runs, 'credits' => $credits, 'revenue_cents' => $revenue, 'saved' => $saved, 'cost_per_saved' => $saved > 0 ? round($credits / $saved, 1) : null, 'top_tool' => $topTool,
+            'top_tool_save' => $topTool ? app(StudioMetrics::class)->toolSaveRate((int) $topTool->id, $since) : null,
+        ];
     }
 
     public function operations(): array
@@ -126,7 +159,7 @@ class ControlRoomMetrics
             'scheduler_age' => $age('platform:scheduler_heartbeat'), 'worker_age' => $age('platform:worker_heartbeat'),
             'queue_pending' => rescue(fn () => DB::table('jobs')->count(), 0), 'queue_failed' => rescue(fn () => DB::table('failed_jobs')->count(), 0),
             'backup' => (string) config('platform.backup_marker') !== '' && is_file((string) config('platform.backup_marker')) ? date('Y/m/d H:i', filemtime((string) config('platform.backup_marker'))) : null,
-            'paypal' => filled(config('services.paypal.client_id')), 'ai' => filled(config('services.openai.key')),
+            'paypal' => filled(config('services.paypal.client_id')), 'ai' => app(\App\Domain\Lab\Services\AiGateway::class)->enabled(),
             'new_users' => $newUsers, 'verified_rate' => $newUsers > 0 ? (int) round($verified / $newUsers * 100) : null,
         ];
     }

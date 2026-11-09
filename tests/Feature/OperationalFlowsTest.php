@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Domain\Commerce\Services\CreditLedger;
 use App\Domain\Content\Models\ContentItem;
+use App\Domain\Lab\Ai\AiContext;
+use App\Domain\Lab\Ai\ProviderChain;
+use App\Domain\Lab\Ai\UsageRecorder;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Services\AiGateway;
 use App\Domain\Workspace\Models\Workspace;
@@ -84,9 +87,10 @@ class OperationalFlowsTest extends TestCase
         $project = $workspace->projects()->create(['name' => 'اختبار فشل', 'slug' => 'failure']);
         app(CreditLedger::class)->record($workspace, 'grant:failure', 'grant', 10, 'اختبار');
         $tool = Tool::query()->where('slug', 'content-angle-generator')->firstOrFail();
-        app()->instance(AiGateway::class, new class extends AiGateway
+        // Same signature and collaborators as the real gateway (provider chain + usage recorder); only the call itself blows up.
+        app()->instance(AiGateway::class, new class(app(ProviderChain::class), app(UsageRecorder::class)) extends AiGateway
         {
-            public function generate(string $input, ?string $instructions = null): array
+            public function generate(string $input, ?string $instructions = null, ?AiContext $context = null): array
             {
                 throw new \RuntimeException('network down');
             }

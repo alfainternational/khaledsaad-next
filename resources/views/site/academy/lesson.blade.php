@@ -105,6 +105,13 @@
                 @endif
                 @if($savedAsset && $member)<div class="asset-body" style="padding-top:0"><details class="compare"><summary class="btn btn-text" style="display:inline-flex">قارن مع نسختك المحفوظة (v{{ $savedAsset->version }})</summary><blockquote>{{ Str::limit($savedAsset->body_markdown, 400) }}</blockquote></details></div>@endif
             </x-athar.asset-card>
+            @if($enhanceEnabled)
+            <div class="btn-row" id="enhance" style="margin-top:12px">
+                @if($member)<form method="post" action="{{ route('academy.lesson.enhance', [$course, $lesson]) }}">@csrf<input type="hidden" name="situation" value="{{ $mode }}"><button class="btn btn-secondary" type="submit">حسّن بالذكاء الاصطناعي ({{ $enhanceCost }} رصيد)</button></form>
+                @else<a class="btn btn-secondary" href="{{ route('register') }}">حسّن بالذكاء الاصطناعي بحساب مجاني</a>@endif
+                <span class="muted small">@if(! empty($generated['enhanced']))حُسّنت الصياغة. الأرقام من مدخلاتك أنت؛ راجعها قبل الحفظ.@else يحسّن الصياغة والبنية فقط ولا يغيّر أرقامك.@endif</span>
+            </div>
+            @endif
             @else
             <p class="muted small" style="margin:12px 0 0">أكمل الخطوات ثم اضغط «أنشئ الأصل». يعمل بالقواعد والقوالب بلا ذكاء اصطناعي.</p>
             @endif

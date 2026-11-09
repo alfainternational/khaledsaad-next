@@ -66,6 +66,12 @@
                         <tr data-variant="{{ $variant->label }}"><td><b>{{ $variant->label }}</b></td><td>v{{ $versions->firstWhere('id', $variant->tool_version_id)?->version ?? '—' }}</td><td>{{ $variant->weight }}٪</td><td>{{ $er['exposed'] }}</td><td>{{ $er['converted'] }}</td><td>{{ $er['rate'] === null ? '—' : $er['rate'].'٪' }}</td></tr>
                         @endforeach
                     </tbody></x-athar.table>
+                    @php($leader = $experiment->variants->firstWhere('id', $significance['leader_variant_id']))
+                    <div class="significance" id="significance" data-significant="{{ $significance['significant'] ? 1 : 0 }}" role="status">
+                        <b>{{ $significance['significant'] ? 'النتيجة دالّة إحصائياً' : ($significance['ready'] ? 'الفرق غير دالّ بعد' : 'العينة غير كافية بعد') }}</b>
+                        <span class="small"><span dir="ltr">z = {{ $significance['z'] === null ? '—' : number_format($significance['z'], 2) }} · p {{ $significance['p'] === null ? '= —' : ($significance['p'] < 0.001 ? '< 0.001' : '= '.number_format($significance['p'], 3)) }}</span> · العينة {{ implode(' / ', $significance['samples']) }} تعرّضاً (الحد الأدنى {{ $significance['min_sample'] }} لكل نسخة)</span>
+                        <span class="small muted">@if($significance['significant'])تُعتمد النسخة {{ $leader?->label }} تلقائياً في الفحص القادم (كل ساعة)، ويمكنك اعتمادها الآن يدوياً.@else اختبار z لنسبتين على معدل الحفظ؛ يُعتمد الفائز تلقائياً عند p أقل من {{ \App\Domain\Lab\Services\StudioMetrics::ALPHA }} مع اكتمال العينة.@if($leader) المتقدّمة الآن: {{ $leader->label }}.@endif @endif</span>
+                    </div>
                     <form method="post" action="{{ route('admin.tools.experiment.end', [$tool, $experiment]) }}" class="row" style="margin-top:12px">@csrf
                         <label class="small" for="winner">اعتمد الفائز</label><select id="winner" name="winner" class="input" style="width:auto;min-height:44px"><option value="">بلا اعتماد</option>@foreach($experiment->variants as $variant)<option value="{{ $variant->id }}">{{ $variant->label }} (v{{ $versions->firstWhere('id', $variant->tool_version_id)?->version }})</option>@endforeach</select>
                         <x-athar.button type="submit" variant="secondary">أنهِ التجربة</x-athar.button>

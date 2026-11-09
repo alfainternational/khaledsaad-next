@@ -9,6 +9,7 @@ use App\Domain\Lab\Models\ExperimentVariant;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Models\ToolVersion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A/B between two template versions of a tool (blueprint §6.4): a learner is assigned a variant once per session (sticky),
@@ -71,6 +72,30 @@ class ExperimentPicker
             $query->where('session_token', EventRecorder::sessionToken($request))->orderByDesc('id')->limit(1);
         }
         $query->update(['converted_at' => now()]);
+    }
+
+    /**
+     * End an experiment and, when a winner is given, adopt its template version as the tool's active one.
+     * The single adoption path: the studio's manual «اعتمد الفائز» and the hourly platform:evaluate-experiments both call it.
+     */
+    public function conclude(Experiment $experiment, ?ExperimentVariant $winner): ?ToolVersion
+    {
+        return DB::transaction(function () use ($experiment, $winner): ?ToolVersion {
+            $experiment->update(['status' => 'ended', 'ended_at' => now(), 'winner_variant_id' => $winner?->id]);
+            if (! $winner || ! $winner->tool_version_id || $experiment->subject_type !== 'tool') {
+                return null;
+            }
+            $tool = Tool::query()->find($experiment->subject_id);
+            $version = $tool?->versions()->whereKey($winner->tool_version_id)->first();
+            if (! $version) {
+                return null;
+            }
+            $tool->versions()->update(['is_active' => false]);
+            $version->update(['is_active' => true]);
+            $tool->update(['output_template' => $version->output_template ?: $tool->output_template]);
+
+            return $version;
+        });
     }
 
     /** @param ExperimentVariant[] $variants */

@@ -69,5 +69,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CompleteAcademySeeder::class);
         // المرحلة 4 (الاكتمال): قواعد توجيه تغطي المسارات الـ12.
         $this->call(StageFourCompletionSeeder::class);
+        $this->callWith(EditorialContentSeeder::class, ['freshInstall' => true]);
     }
 }

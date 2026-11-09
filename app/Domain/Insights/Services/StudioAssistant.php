@@ -6,6 +6,7 @@ use App\Domain\Academy\Models\Lesson;
 use App\Domain\Academy\Services\LessonCoach;
 use App\Domain\Insights\Models\LearnerEvent;
 use App\Domain\Insights\Models\QualitySignal;
+use App\Domain\Lab\Ai\AiContext;
 use App\Domain\Lab\Services\AiGateway;
 use DomainException;
 
@@ -58,7 +59,7 @@ class StudioAssistant
         }
         $out[] = [
             'part' => 'situation', 'title' => 'ولّد متغيّراً للدرس بموقف بديل لجمهور آخر',
-            'text' => LessonCoach::enabled() ? 'يستخدم مفتاح الذكاء الاصطناعي لاقتراح موقف تدريبي بديل (مثلاً لوكالة بدل صاحب مشروع) تراجعه ثم تعتمده كإصدار جديد.' : 'يتطلب مفتاح ذكاء اصطناعي (OPENAI_API_KEY). بلا مفتاح: اكتب الموقف البديل يدوياً في حقل «الموقف العام».',
+            'text' => LessonCoach::enabled() ? 'اترك النص فارغاً ليقترح الذكاء الاصطناعي موقفاً تدريبياً بديلاً (مثلاً لوكالة بدل صاحب مشروع)، أو اكتبه بنفسك. يُحفظ كمسودة تراجعها ثم تطبّقها كإصدار جديد.' : 'التوليد الآلي يتطلب مفتاح ذكاء اصطناعي (OPENAI_API_KEY). بلا مفتاح: اكتب الموقف البديل هنا واحفظه كمسودة، ثم طبّقه كإصدار جديد.',
             'kind' => 'ai', 'enabled' => LessonCoach::enabled(),
         ];
 
@@ -104,7 +105,8 @@ class StudioAssistant
         }
         $out = $this->ai->generate(
             "الدرس: {$lesson->title}\nالهدف: {$lesson->goal}\nالموقف الحالي: {$lesson->scenario_template}\nاكتب موقفاً تدريبياً بديلاً لجمهور «{$audience}» بجملتين، بنفس المتغيّرات {{offer}} {{budget_label}} {{channel_label}} {{goal_label}}، وبالعربية.",
-            'أنت محرر تعليمي. أعد نصاً عربياً قصيراً فقط بلا مقدمات.'
+            'أنت محرر تعليمي. أعد نصاً عربياً قصيراً فقط بلا مقدمات.',
+            AiContext::internal('studio:lesson-variant'),
         );
 
         return $out['text'];

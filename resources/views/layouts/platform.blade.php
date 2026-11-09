@@ -15,13 +15,20 @@
     <meta property="og:title" content="@yield('title', config('platform.name').' — '.config('platform.tagline'))">
     <meta property="og:description" content="@yield('description', 'أثر: تعلّم التسويق والذكاء الاصطناعي بالممارسة. كل درس ينتهي بأصل لمشروعك أنت، وكل أصل يُقاس في الواقع.')">
     <meta property="og:url" content="@yield('canonical', url()->current())">
+    <meta property="og:image" content="@yield('og_image', asset('images/og-default.png'))">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="أثر — تعلّم. طبّق. قِس الأثر.">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="@yield('og_image', asset('images/og-default.png'))">
     @if(View::hasSection('noindex'))<meta name="robots" content="noindex,follow">@endif
     <link rel="canonical" href="@yield('canonical', url()->current())">
     <link rel="alternate" hreflang="ar" href="@yield('canonical', url()->current())">
     <link rel="alternate" type="application/rss+xml" title="أحدث محتوى أثر" href="{{ route('feed') }}">
     @stack('before-styles')
     <script nonce="{{ $cspNonce }}">(function(){var t;try{t=localStorage.getItem('athar-theme');if(localStorage.getItem('athar-depth')==='fast'){document.documentElement.classList.add('fast')}}catch(e){}if(t!=='dark'&&t!=='light'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.add('js')})();</script>
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ asset('fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2') }}">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ asset('fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2') }}">
     <link rel="stylesheet" href="{{ asset('css/platform.css') }}?v={{ filemtime(public_path('css/platform.css')) }}">
     @stack('structured-data')
     @stack('head')

@@ -11,20 +11,20 @@ topic: seo-content-marketing
 tool: headlines-cta
 reading_minutes: 7
 published_at: 2026-06-03
+last_reviewed_at: 2026-10-30
+editorial_revision: reading-2026-10
 eyebrow: رؤية عالمية
 excerpt: قراءة عربية لدراسة Backlinko على ملايين نتائج البحث — كيف تتوزع النقرات بين المراكز، وما الذي لا تقوله الأرقام، وكيف يستفيد منها متجر أو عيادة في السوق العربي.
 tldr: المركز الأول يحصد قرابة ربع النقرات وفق Backlinko، والمراكز الثلاثة الأولى تأخذ أكثر من نصفها، بينما تكاد الصفحة الثانية لا تُرى. القيمة الحقيقية ليست في الترتيب وحده بل في العنوان والوصف اللذين يحوّلان الظهور إلى نقرة.
-arabic_context: في السوق العربي تتسع فجوة النقرات بين المراكز لأن معظم البحث يتم من الجوال حيث تظهر نتيجة أو اثنتان فقط قبل التمرير. على المتجر أو العيادة أن يستهدفا كلمات يمكن احتلال مراكزها الثلاثة الأولى فعلاً، وأن يكتبا عناوين عربية واضحة تنافس على النقرة لا على الترتيب فقط.
+arabic_context: لا تتضمن هذه الدراسة تفصيلاً يثبت نسب النقر أو سهولة المنافسة في العربية. قارن استعلاماتك وأجهزتك ومواضعك الفعلية في Search Console، واستخدم منحنى الدراسة لتوليد فرضية لا كمعيار مضمون.
 sources:
   - publisher: Backlinko
     title: We Analyzed 4 Million Google Search Results. Here's What We Learned About Organic CTR
     url: https://backlinko.com/google-ctr-stats
-    date: 2023-08-17
     language: en
   - publisher: Google Search Central
     title: Influencing your title links in search results
     url: https://developers.google.com/search/docs/appearance/title-link
-    date: 2024-02-20
     language: en
 faq:
   - q: هل يعني المركز الأول دائماً أعلى عدد من الزيارات؟

@@ -4,6 +4,7 @@
 @section('canonical', route('tags.show', $tag))
 @if($noindex || $items->currentPage() > 1)@section('noindex', '1')@endif
 @section('content')
+<x-athar.schema :data="['@type' => 'CollectionPage', 'name' => 'وسم: '.$tag->name, 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => route('tags.show', $tag), 'inLanguage' => 'ar', 'mainEntity' => ['@type' => 'ItemList', 'numberOfItems' => $items->count(), 'itemListElement' => collect($items->items())->values()->map(fn ($i, $k) => ['@type' => 'ListItem', 'position' => $k + 1, 'name' => $i->title, 'url' => route('articles.show', $i)])->all()]]" />
 <section class="page-hero compact"><div class="shell">
     <x-athar.breadcrumbs :items="[['المجلة', route('articles.index')], ['وسم: '.$tag->name, null]]" />
     <x-athar.kicker>وسم</x-athar.kicker>

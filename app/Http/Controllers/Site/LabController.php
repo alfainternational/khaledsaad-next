@@ -88,7 +88,7 @@ class LabController extends Controller
         return view('site.tools.show', [
             'tool' => $tool, 'fields' => $fields, 'chain' => $chain, 'result' => $result, 'member' => (bool) $user, 'projects' => $projects, 'project' => $project,
             'saved' => $saved, 'latest' => $latest, 'diff' => $diff, 'pendingDiff' => $pendingDiff, 'examples' => $examples,
-            'relatedLesson' => $relatedLesson, 'relatedArticle' => $relatedArticle, 'aiEnabled' => filled(config('services.openai.key')),
+            'relatedLesson' => $relatedLesson, 'relatedArticle' => $relatedArticle, 'aiEnabled' => app(\App\Domain\Lab\Services\AiGateway::class)->enabled(),
             'isSaved' => $result && $latest && $latest->body_markdown === $result['markdown'],
             'checks' => \App\Domain\Lab\Services\QualityChecker::CHECKS,
         ]);

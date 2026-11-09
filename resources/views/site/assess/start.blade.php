@@ -2,6 +2,7 @@
 @section('title', 'شخّص مشروعك — أثر')
 @section('description', 'تشخيص لمشروعك في ثلاث مراحل ينتهي بخريطة أولويات قابلة للنسخ والتنزيل بلا تسجيل.')
 @section('content')
+<x-athar.schema :data="['@type' => 'WebPage', 'name' => html_entity_decode(trim($__env->yieldContent('title')), ENT_QUOTES), 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => url()->current(), 'inLanguage' => 'ar', 'isPartOf' => ['@type' => 'WebSite', 'name' => 'أثر', 'url' => route('home')]]" />
 @php($c = \App\Domain\Assessment\Services\Catalog::class)
 <section class="page-hero"><div class="narrow">
     <x-athar.breadcrumbs :items="[['شخّص مشروعك', null]]" />

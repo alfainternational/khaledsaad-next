@@ -99,6 +99,9 @@ class MagazineController extends Controller
 
         $bodyHtml = Markdown::toHtml((string) $article->body, headingIds: true, literalLevels: true);
         $headings = Markdown::headings((string) $article->body);
+        $readingWords = Markdown::wordCount((string) $article->body);
+        $readingMinutes = max(1, (int) ceil($readingWords / 180));
+        $readingIndexed = count($headings) >= 3 && $readingWords >= 400;
         $tool = $article->relatedTool && $article->relatedTool->is_published ? $article->relatedTool : null;
         $lesson = $article->relatedLesson && $article->relatedLesson->isPublished() && $article->relatedLesson->course?->is_published ? $article->relatedLesson : null;
         $topicCourse = $this->topicCourse($article);
@@ -131,6 +134,7 @@ class MagazineController extends Controller
 
         return view('site.articles.show', [
             'article' => $article, 'bodyHtml' => $bodyHtml, 'headings' => $headings, 'related' => $related, 'previous' => $previous, 'next' => $next,
+            'readingMinutes' => $readingMinutes, 'readingIndexed' => $readingIndexed,
             'tool' => $tool, 'toolUrl' => $tool ? Markdown::toolUrl($tool) : null, 'lesson' => $lesson, 'topicCourse' => $topicCourse, 'faq' => $faq,
             'structuredJson' => json_encode($structured, self::JSON), 'faqJson' => $faqSchema ? json_encode($faqSchema, self::JSON) : null,
             'staleWarning' => $isEditor && $article->hasStaleSources(), 'oldestSource' => $article->oldestSourceDate(),

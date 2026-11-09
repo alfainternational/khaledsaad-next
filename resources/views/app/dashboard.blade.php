@@ -15,20 +15,20 @@
         <div class="stat"><b>{{ $stats['lessons'] }}</b><span>درس مكتمل</span></div>
         <div class="stat"><b>{{ $stats['assets'] }}</b><span>أصل محفوظ</span></div>
         <div class="stat"><b>{{ $stats['results'] }}</b><span>نتيجة واقعية مسجّلة</span></div>
-        <div class="stat"><b>{{ $stats['credits'] }}</b><span>رصيد متبقٍ · {{ $subscription?->plan ?? 'مجاني' }} · <a href="{{ route('app.billing') }}">الفوترة</a></span></div>
+        <div class="stat"><b>{{ $stats['credits'] }}</b><span>رصيد متبقٍ · {{ $subscription ? 'الخطة الاحترافية' : 'الخطة المجانية' }} · <a href="{{ route('app.billing') }}">الفوترة</a></span></div>
     </div>
     <div class="dash-grid">
         <div class="stack" style="gap:24px">
             <div class="card" id="weekly-plan"><x-athar.kicker>خطة الأسبوع</x-athar.kicker><h2 style="font-size:22px">مشتقة من تقدمك والتزاماتك</h2>
-                @if($plan === [])<p class="muted">لا شيء معلّق. افتح درساً جديداً أو أداة.</p>@else<ol class="plan-list">@foreach($plan as $item)<li><input type="checkbox" aria-label="تم"><a href="{{ $item['url'] }}">{{ $item['label'] }}</a><span class="muted small">هذا الأسبوع</span></li>@endforeach</ol>@endif
+                @if($plan === [])<p class="muted">لا شيء معلّق. افتح درساً جديداً أو أداة.</p>@else<ol class="plan-list">@foreach($plan as $item)<li><span class="plan-dot" aria-hidden="true"></span><a href="{{ $item['url'] }}">{{ $item['label'] }}</a><span class="muted small">هذا الأسبوع</span></li>@endforeach</ol>@endif
             </div>
             <div class="card" id="progress"><div class="split"><div><x-athar.kicker>تقدمي</x-athar.kicker><h2 style="font-size:22px">المسارات التي بدأتها</h2></div><a class="btn btn-text" href="{{ route('app.progress') }}">كل تقدمي ←</a></div>
                 @forelse($started as $s)<div style="padding:12px 0;border-top:1px solid var(--line)"><div class="split"><a href="{{ route('academy.show', $s['course']) }}"><b>{{ $s['course']->title }}</b></a>@if($s['progress']['next'])<a class="small" href="{{ route('academy.lesson', [$s['course'], $s['progress']['next']]) }}">التالي: {{ $s['progress']['next']->title }} ←</a>@else<span class="small" style="color:var(--success)">مكتمل ✓</span>@endif</div><x-athar.progress :value="$s['progress']['percent']" :done="$s['progress']['done']" :total="$s['progress']['total']" /></div>
                 @empty<p class="muted">لم تبدأ مساراً بعد. <a href="{{ route('academy.index') }}">افتح الأكاديمية</a>.</p>@endforelse
             </div>
-            <div class="card" id="assets"><div class="split"><div><x-athar.kicker>آخر أصولي</x-athar.kicker><h2 style="font-size:22px">5 أصول محفوظة</h2></div></div>
+            <div class="card" id="assets"><div class="split"><div><x-athar.kicker>آخر أصولي</x-athar.kicker><h2 style="font-size:22px">5 أصول محفوظة</h2></div><a class="btn btn-text" href="{{ route('app.outputs.index') }}">كل أصولي ←</a></div>
                 @if($assets->isEmpty())<p class="muted">لا أصول بعد. كل درس ينتهي بأصل تحفظه هنا.</p>@else
-                <x-athar.table caption="آخر الأصول"><thead><tr><th>النوع</th><th>العنوان</th><th>الدرس</th><th>التاريخ</th></tr></thead><tbody>@foreach($assets as $asset)<tr><td>{{ $asset->output_type }}</td><td>{{ $asset->title }} <span class="muted small">v{{ $asset->version }}</span></td><td>{{ $asset->lesson?->title ?? '—' }}</td><td>{{ $asset->created_at->format('Y/m/d') }}</td></tr>@endforeach</tbody></x-athar.table>@endif
+                <x-athar.table caption="آخر الأصول"><thead><tr><th>النوع</th><th>العنوان</th><th>المشروع</th><th>التاريخ</th></tr></thead><tbody>@foreach($assets as $asset)<tr><td>{{ \App\Domain\Lab\Services\LabCatalog::label((string) $asset->output_type) }}</td><td><a href="{{ route('app.outputs.show', $asset) }}">{{ $asset->title }}</a> <span class="muted small">v{{ $asset->version }}</span>@if($asset->lesson)<br><span class="muted small">{{ $asset->lesson->title }}</span>@endif</td><td>{{ $asset->project?->name ?? '—' }}</td><td>{{ $asset->created_at->format('Y/m/d') }}</td></tr>@endforeach</tbody></x-athar.table>@endif
             </div>
             <div class="card" id="activity"><x-athar.kicker>النشاط</x-athar.kicker><ul class="list">@forelse($activity as $e)<li><span>{{ ['visit.lesson' => 'فتحت درساً', 'lesson.lab_generated' => 'أنشأت أصلاً', 'asset.saved' => 'حفظت أصلاً', 'question.answered' => 'أجبت عن سؤال قرار', 'checkin.committed' => 'التزمت بفعل واقعي', 'checkin.recorded' => 'سجّلت نتيجة واقعية', 'lesson.completed' => 'أكملت درساً', 'assessment.completed' => 'أكملت التشخيص', 'lesson.opening_decided' => 'سجّلت قرارك الأول', 'lesson.final_decided' => 'راجعت قرارك'][$e->event] ?? $e->event }}@if($e->lesson) · {{ $e->lesson->title }}@endif</span><span class="when">{{ $e->created_at->diffForHumans() }}</span></li>@empty<li class="muted">لا نشاط بعد.</li>@endforelse</ul></div>
         </div>

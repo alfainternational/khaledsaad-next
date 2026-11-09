@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Lab\Models\Experiment;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Models\ToolVersion;
+use App\Domain\Lab\Services\ExperimentPicker;
 use App\Domain\Lab\Services\GeneratorEngine;
 use App\Domain\Lab\Services\LabCatalog;
 use App\Domain\Lab\Services\QualityChecker;
@@ -46,6 +47,7 @@ class ToolStudioController extends Controller
             'tool' => $tool, 'versions' => $tool->versions, 'experiment' => $experiment, 'sample' => $sample, 'test' => $test,
             'rate' => $this->metrics->saveRates()[$tool->id] ?? ['generated' => 0, 'saved' => 0, 'rate' => null],
             'versionRates' => $this->metrics->versionRates($tool), 'experimentRates' => $experiment ? $this->metrics->experimentRates($experiment) : [],
+            'significance' => $experiment ? $this->metrics->significance($experiment) : null,
             'checks' => QualityChecker::CHECKS, 'categories' => Tool::CATEGORIES, 'chainTypes' => LabCatalog::CHAIN + LabCatalog::LESSON_ASSETS + ['profile' => 'ملف المشروع'],
             'audit' => DB::table('audit_logs')->where('subject_type', 'tool')->where('subject_id', (string) $tool->id)->orderByDesc('id')->limit(12)->get(),
         ]);
@@ -148,21 +150,15 @@ class ToolStudioController extends Controller
         return back()->with('status', 'بدأت تجربة A/B: '.$data['weight_a'].'٪ من التوليدات على A و'.(100 - $data['weight_a']).'٪ على B. معدل الحفظ لكل منهما يظهر هنا.');
     }
 
-    public function endExperiment(Request $request, Tool $tool, Experiment $experiment)
+    /** Manual end: the editor may adopt a winner at any time; the hourly platform:evaluate-experiments adopts one automatically at significance. */
+    public function endExperiment(Request $request, Tool $tool, Experiment $experiment, ExperimentPicker $picker)
     {
         $this->authorizeEditor($request);
         abort_unless($experiment->subject_type === 'tool' && (int) $experiment->subject_id === $tool->id, 404);
         $data = $request->validate(['winner' => ['nullable', 'integer']]);
         $winner = isset($data['winner']) ? $experiment->variants()->whereKey($data['winner'])->first() : null;
-        $experiment->update(['status' => 'ended', 'ended_at' => now(), 'winner_variant_id' => $winner?->id]);
-        if ($winner && $winner->tool_version_id) {
-            $version = $tool->versions()->whereKey($winner->tool_version_id)->first();
-            if ($version) {
-                $this->activate($tool, $version);
-                $tool->update(['output_template' => $version->output_template ?: $tool->output_template]);
-            }
-        }
-        $this->audit($request, 'tool.experiment_ended', $tool, ['experiment_id' => $experiment->id, 'winner_variant_id' => $winner?->id]);
+        $picker->conclude($experiment, $winner);
+        $this->audit($request, 'tool.experiment_ended', $tool, ['experiment_id' => $experiment->id, 'winner_variant_id' => $winner?->id, 'automatic' => false]);
 
         return back()->with('status', $winner ? 'انتهت التجربة واعتُمد الإصدار الفائز ('.$winner->label.').' : 'انتهت التجربة بلا اعتماد؛ الإصدار الفعّال كما هو.');
     }

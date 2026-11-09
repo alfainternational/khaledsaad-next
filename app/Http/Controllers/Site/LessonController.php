@@ -7,6 +7,7 @@ use App\Domain\Academy\Models\DecisionJournal;
 use App\Domain\Academy\Models\Lesson;
 use App\Domain\Academy\Models\RealWorldCheckin;
 use App\Domain\Academy\Services\AssetStore;
+use App\Domain\Academy\Services\LessonAssetEnhancer;
 use App\Domain\Academy\Services\LessonCoach;
 use App\Domain\Academy\Services\LessonComposer;
 use App\Domain\Academy\Services\ProgressService;
@@ -83,6 +84,7 @@ class LessonController extends Controller
             'opening' => $questions->firstWhere('is_opening', true), 'questions' => $questions->where('is_opening', false)->values(),
             'journal' => $journal, 'checkin' => $checkin, 'savedAsset' => $savedAsset, 'answered' => $answered, 'completed' => $completed,
             'courseProgress' => $courseProgress, 'member' => (bool) $user, 'coachEnabled' => LessonCoach::enabled() && $user,
+            'enhanceEnabled' => LessonAssetEnhancer::enabled(), 'enhanceCost' => LessonAssetEnhancer::cost($lesson),
             'coachAnswer' => session('coach.answer.'.$lesson->id), 'parts' => Lesson::PARTS, 'channels' => Catalog::CHANNELS,
             // Part 8 "الأداة": the path's designated lab tool, else any published tool that declares this course.
             'relatedTool' => Tool::query()->where('is_published', true)->where('slug', (string) LabCatalog::toolSlugForCourse($course->slug))->first()
@@ -260,6 +262,31 @@ class LessonController extends Controller
         $this->events->record($request, 'coach.asked', ['lesson_id' => $lesson->id]);
 
         return redirect()->to(route('academy.lesson', [$course, $lesson]).'#coach')->with('coach.answer.'.$lesson->id, $answer);
+    }
+
+    /** «حسّن بالذكاء الاصطناعي» للأصل المولّد في مختبر الدرس: يعمل فقط بوجود مفتاح AI وبرصيد مُعلن قبل التنفيذ. */
+    public function enhance(Request $request, Course $course, Lesson $lesson, LessonAssetEnhancer $enhancer)
+    {
+        $this->guard($course, $lesson);
+        $user = $this->member($request);
+        abort_unless($user && LessonAssetEnhancer::enabled(), 404);
+        $generated = session('lab.asset.'.$lesson->id);
+        $back = route('academy.lesson', [$course, $lesson, 'situation' => $request->input('situation') === 'project' ? 'project' : 'general']);
+        if (! is_array($generated) || empty($generated['markdown'])) {
+            return redirect()->to($back.'#part-lab')->withErrors(['lab' => 'أنشئ الأصل أولاً ثم حسّنه.']);
+        }
+        $workspace = $user->workspaces()->first();
+        abort_unless($workspace, 422);
+        try {
+            $generated['markdown'] = $enhancer->enhance($user, $workspace, $lesson, (string) $generated['markdown']);
+        } catch (DomainException $e) {
+            return redirect()->to($back.'#asset')->withErrors(['lab' => $e->getMessage()]);
+        }
+        $generated['enhanced'] = true;
+        session(['lab.asset.'.$lesson->id => $generated]);
+        $this->events->record($request, 'lesson.asset_enhanced', ['lesson_id' => $lesson->id, 'tool_id' => $lesson->lab_tool_id, 'part' => 'lab']);
+
+        return redirect()->to($back.'#asset')->with('status', 'حُسّنت صياغة أصلك بالذكاء الاصطناعي. راجع الأرقام ثم احفظه.');
     }
 
     /** «لا يناسب حالتي»: content report tied to a part; feeds quality signals. */

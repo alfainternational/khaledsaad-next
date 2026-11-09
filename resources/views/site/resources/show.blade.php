@@ -2,6 +2,7 @@
 @section('title', $template->name.' — أثر')
 @section('description', $template->description)
 @section('content')
+<x-athar.schema :data="['@type' => 'DigitalDocument', 'name' => $template->name, 'description' => $template->description, 'url' => route('resources.show', $template), 'inLanguage' => 'ar', 'isAccessibleForFree' => true, 'encodingFormat' => 'text/markdown', 'publisher' => ['@type' => 'Organization', 'name' => 'أثر', 'url' => route('home')]]" />
 <section class="page-hero"><div class="shell"><x-athar.breadcrumbs :items="[['الموارد', route('resources')], [$template->name, null]]" /><span class="kicker">قالب مجاني</span><h1>{{ $template->name }}</h1><p>{{ $template->description }}</p></div></section>
 <section class="section-tight"><div class="shell dash-grid">
 <article class="card"><h2>معاينة القالب</h2><div class="asset-body">{!! \App\Support\Markdown::toHtml($markdown) !!}</div></article>

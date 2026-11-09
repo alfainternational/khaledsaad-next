@@ -2,6 +2,7 @@
 @section('title', $tool->name.' — المختبر — أثر')
 @section('description', $tool->description)
 @section('content')
+<x-athar.schema :data="['@type' => 'WebApplication', 'name' => $tool->name, 'description' => $tool->description, 'url' => route('tools.show', $tool), 'inLanguage' => 'ar', 'applicationCategory' => 'BusinessApplication', 'operatingSystem' => 'Web', 'isAccessibleForFree' => true, 'offers' => ['@type' => 'Offer', 'price' => '0', 'priceCurrency' => 'USD'], 'publisher' => ['@type' => 'Organization', 'name' => 'أثر', 'url' => route('home')]]" />
 <section class="page-hero tool-hero"><div class="shell">
     <x-athar.breadcrumbs :items="[['المختبر', route('tools.index')], [$tool->name, null]]" />
     <span class="kicker">{{ $tool->category }} · {{ $tool->kindLabel() }}</span>

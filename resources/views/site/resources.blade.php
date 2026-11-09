@@ -3,6 +3,8 @@
 @section('description', 'قوالب تسويقية مجانية مرتبطة بدروس عملية: عاينها ونزّلها بصيغة Markdown أو PDF أو جدول، واحفظها في مشروعك.')
 @section('canonical', route('resources'))
 @section('content')
+@php($resourceItems = collect($resources instanceof \Illuminate\Contracts\Pagination\Paginator ? $resources->items() : $resources)->values())
+<x-athar.schema :data="['@type' => 'CollectionPage', 'name' => 'القوالب والموارد', 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => route('resources'), 'inLanguage' => 'ar', 'mainEntity' => ['@type' => 'ItemList', 'numberOfItems' => $resourceItems->count(), 'itemListElement' => $resourceItems->map(fn ($r, $k) => ['@type' => 'ListItem', 'position' => $k + 1, 'name' => $r->name, 'url' => route('resources.show', $r)])->all()]]" />
 <section class="page-hero"><div class="shell">
 <x-athar.breadcrumbs :items="[['الموارد', null]]" /><span class="kicker">من الفكرة إلى التطبيق</span><h1>قوالب تختصر البداية، لا التفكير</h1><p>اختر القالب الذي يناسب قرارك القادم. عاينه، نزّله مجانًا، ثم طبّقه على مشروعك.</p>
 </div></section>

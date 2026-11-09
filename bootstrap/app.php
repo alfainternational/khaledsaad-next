@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\ImpersonationGuard;
 use App\Http\Middleware\RedirectLegacyUrls;
 use App\Http\Middleware\RequestContext;
@@ -18,7 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(RequestContext::class);
         $middleware->append(RedirectLegacyUrls::class);
         $middleware->web(append: [SecurityHeaders::class, ImpersonationGuard::class]);
-        $middleware->validateCsrfTokens(except: ['webhooks/payments']);
+        $middleware->alias(['staff' => EnsureStaff::class]);
+        $middleware->validateCsrfTokens(except: ['webhooks/paypal']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

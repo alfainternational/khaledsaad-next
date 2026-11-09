@@ -4,6 +4,7 @@ namespace App\Domain\Academy\Services;
 
 use App\Domain\Academy\Models\Lesson;
 use App\Domain\Commerce\Services\CreditLedger;
+use App\Domain\Lab\Ai\AiContext;
 use App\Domain\Lab\Models\ToolOutput;
 use App\Domain\Lab\Services\AiGateway;
 use App\Domain\Workspace\Models\Workspace;
@@ -21,7 +22,7 @@ class LessonCoach
 
     public static function enabled(): bool
     {
-        return filled(config('services.openai.key'));
+        return app(AiGateway::class)->enabled();
     }
 
     public function ask(User $user, Workspace $workspace, Lesson $lesson, string $question, ?ToolOutput $asset, bool $compare): array
@@ -42,7 +43,18 @@ class LessonCoach
         $key = 'coach:'.$lesson->id.':'.$user->id.':'.Str::random(8);
         $this->ledger->reserve($workspace, $key.':reserve', 1, 'سؤال للمدرّب: '.$lesson->title);
         try {
-            $answer = $this->ai->generate("السياق:\n{$context}\n\nسؤال المتعلم: ".Str::limit($question, 800), $instructions);
+            $answer = $this->ai->generate(
+                "السياق:\n{$context}\n\nسؤال المتعلم: ".Str::limit($question, 800),
+                $instructions,
+                new AiContext(
+                    workspace: $workspace,
+                    userId: $user->id,
+                    purpose: 'lesson:coach',
+                    operationKey: $key,
+                    sensitive: true,
+                    cacheable: false,
+                ),
+            );
         } catch (DomainException $e) {
             $this->ledger->record($workspace, $key.':release', 'release', 1, 'فك حجز سؤال فاشل');
             throw $e;

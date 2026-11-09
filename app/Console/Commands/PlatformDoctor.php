@@ -50,7 +50,7 @@ class PlatformDoctor extends Command
             $checks['recent backup'] = $backupMarker !== '' && is_file($backupMarker) && filemtime($backupMarker) >= now()->subDay()->timestamp;
 
             $warnings['object storage'] = ! in_array(config('filesystems.default'), ['local', 'public'], true);
-            $warnings['openai configured'] = filled(config('services.openai.key'));
+            $warnings['ai provider configured'] = app(\App\Domain\Lab\Services\AiGateway::class)->enabled();
             $warnings['paypal configured'] = filled(config('services.paypal.client_id')) && filled(config('services.paypal.secret')) && filled(config('services.paypal.webhook_id'));
             $warnings['paypal live mode'] = config('services.paypal.mode') === 'live';
         }

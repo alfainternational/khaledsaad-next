@@ -78,7 +78,7 @@ echo "==> Migrating"
 "$PHP" artisan migrate --force --no-interaction
 if [ ! -f storage/app/.seeded ]; then
     echo "==> Seeding (first run only)"
-    "$PHP" artisan db:seed --force --no-interaction && touch storage/app/.seeded storage/app/.seeded-stage1 storage/app/.seeded-stage2 storage/app/.seeded-stage3 storage/app/.seeded-stage4 storage/app/.seeded-stage4-completion
+    "$PHP" artisan db:seed --force --no-interaction && touch storage/app/.seeded storage/app/.seeded-stage1 storage/app/.seeded-stage2 storage/app/.seeded-stage3 storage/app/.seeded-stage4 storage/app/.seeded-stage4-completion storage/app/.seeded-editorial-reading-20261030
 fi
 # Stage-1 learning content (programs, 12 paths, the 6-lesson foundations course, diagnosis questions) is imported once;
 # later edits live in the admin studio, so the seeders never run again automatically.
@@ -108,6 +108,11 @@ if [ ! -f storage/app/.seeded-stage4-completion ]; then
     echo "==> Importing stage-4 completion rules (once)"
     "$PHP" artisan db:seed --class=StageFourCompletionSeeder --force --no-interaction && touch storage/app/.seeded-stage4-completion
 fi
+# Separate conflict-aware release: never rerun the broad magazine seeder to update editor-owned text.
+if [ ! -f storage/app/.seeded-editorial-reading-20261030 ]; then
+    echo "==> Applying reading editorial release (conflicts are reported and retained)"
+    "$PHP" artisan db:seed --class=EditorialContentSeeder --force --no-interaction && touch storage/app/.seeded-editorial-reading-20261030
+fi
 "$PHP" artisan storage:link >/dev/null 2>&1 || true
 echo "==> Caching"
 "$PHP" artisan optimize:clear >/dev/null
@@ -116,6 +121,10 @@ chmod -R u+rwX storage bootstrap/cache
 # LiteSpeed must be able to traverse into the docroot.
 chmod 711 "$HOME" "$HOME/repositories" "$APP_DIR"
 chmod 755 "$APP_DIR/public"
+
+# optimize:clear wiped the cache, heartbeats included. Run one real scheduler pass (it also drains the queue)
+# so the readiness check below reports the scheduler and worker as they are, not as "never seen".
+"$PHP" artisan schedule:run >/dev/null 2>&1 || true
 
 echo "==> Readiness"
 "$PHP" artisan platform:doctor --env=production || true

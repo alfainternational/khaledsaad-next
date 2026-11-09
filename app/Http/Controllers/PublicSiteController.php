@@ -97,6 +97,15 @@ class PublicSiteController extends Controller
         ])->header('Content-Type', 'application/xml');
     }
 
+    /** llms.txt: روابط Markdown مطلقة مع المسارات والأدوات الفعلية. */
+    public function llms()
+    {
+        return response()->view('site.llms', [
+            'courses' => Course::query()->where('is_published', true)->withCount('lessons')->orderBy('position')->get(),
+            'tools' => Tool::query()->where('is_published', true)->where('slug', '!=', 'lesson-lab')->orderBy('position')->get(),
+        ])->header('Content-Type', 'text/plain; charset=utf-8');
+    }
+
     public function feed()
     {
         return response()->view('site.feed', ['articles' => ContentItem::published()->with('author')->latest('published_at')->limit(20)->get()])

@@ -17,7 +17,7 @@
             <a href="{{ route('admin.academy.lessons.edit', ['lesson' => $lesson, 'part' => $key]) }}" @if($part === $key) aria-current="page" @endif data-signal="{{ $signals->firstWhere('part', $key) ? 1 : 0 }}"><span>{{ $completeness[$key] ? '✓' : '○' }} {{ $label }}</span><span class="reach">{{ $reach['parts'][$key]['percent'] }}٪</span></a>
             @endforeach
             <h3 style="font-size:15px;margin-top:16px">الإصدارات</h3>
-            <ul class="list small">@forelse($lesson->versions->take(6) as $v)<li><span>v{{ $v->version }} · {{ $v->reason }}</span><form method="post" action="{{ route('admin.academy.lessons.restore', [$lesson, $v]) }}">@csrf<button class="btn btn-text" type="submit" style="min-height:32px">استرجع</button></form></li>@empty<li class="muted">لا إصدارات بعد.</li>@endforelse</ul>
+            <ul class="list small">@forelse($lesson->versions->take(6) as $v)<li><span>v{{ $v->version }} · {{ $v->reason }}</span><form method="post" action="{{ route('admin.academy.lessons.restore', [$lesson, $v]) }}">@csrf<button class="btn btn-text btn-compact" type="submit">استرجع</button></form></li>@empty<li class="muted">لا إصدارات بعد.</li>@endforelse</ul>
         </div>
 
         <form method="post" action="{{ route('admin.academy.lessons.update', $lesson) }}" class="editor" id="studio-editor">@csrf @method('PUT')<input type="hidden" name="part" value="{{ $part }}">
@@ -45,7 +45,7 @@
             <fieldset @if($part !== 'situation') hidden @endif><legend>موقفك</legend>
                 <div class="field"><label for="scenario_template">قالب الموقف (متغيّرات: @{{offer}} @{{budget_label}} @{{channel_label}} @{{goal_label}} @{{goal_number}} @{{project_name}} @{{city}})</label><textarea id="scenario_template" name="scenario_template">{{ $lesson->scenario_template }}</textarea></div>
                 <div class="field"><label for="general_scenario">الموقف التدريبي العام (JSON)</label><textarea id="general_scenario" name="general_scenario" style="min-height:160px">{{ $json($lesson->general_scenario) }}</textarea></div>
-                @if($variant)<div class="callout"><h4>اقتراح موقف بديل (من الذكاء الاصطناعي، للمراجعة)</h4><p>{{ $variant }}</p></div>@endif
+                <p class="small muted">المتغيّرات المحفوظة لجمهور آخر ({{ $variants->count() }}) في <a href="#studio-variants">المساعد التحريري</a>؛ تطبيق أحدها يستبدل قالب الموقف أعلاه كإصدار جديد.</p>
             </fieldset>
             <fieldset @if($part !== 'guided') hidden @endif><legend>التدريب الموجّه</legend>
                 <div class="field"><label for="guided_steps">الخطوات (JSON: key, label, hint, placeholder, source, type, required)</label><textarea id="guided_steps" name="guided_steps" style="min-height:260px">{{ $json($lesson->guided_steps) }}</textarea></div>
@@ -75,11 +75,32 @@
         <aside class="assistant" id="studio-assistant"><h2 style="font-size:16px">المساعد التحريري</h2><p class="muted small">يشخّص ويقترح بالقواعد الآن، وبالذكاء الاصطناعي عند وجود المفتاح. كل اقتراح يُطبَّق كإصدار جديد قابل للرجوع.</p>
             @foreach($suggestions as $s)
             <div class="suggestion" data-kind="{{ $s['kind'] }}"><h4>{{ $s['title'] }}</h4><p>{{ $s['text'] }}</p>
-                @if($s['kind'] === 'ai')<form method="post" action="{{ route('admin.academy.lessons.variant', $lesson) }}" class="row" style="margin-top:8px">@csrf<input class="input" name="audience" value="المسوّقون والوكالات" style="min-height:40px"><button class="btn btn-secondary" type="submit" @if(empty($s['enabled'])) disabled @endif style="min-height:40px">ولّد</button></form>
+                @if($s['kind'] === 'ai')<form method="post" action="{{ route('admin.academy.lessons.variant', $lesson) }}" class="variant-form" id="variant-form">@csrf
+                    <div class="field"><label for="variant-audience">الجمهور البديل</label><input class="input" id="variant-audience" name="audience" value="{{ old('audience', 'المسوّقون والوكالات') }}" required maxlength="60"></div>
+                    <div class="field"><label for="variant-scenario">نص الموقف البديل{{ $aiEnabled ? ' (اختياري)' : '' }}</label><textarea id="variant-scenario" name="scenario" maxlength="2000" rows="4" @if(! $aiEnabled) required @endif placeholder="{{ $aiEnabled ? 'اتركه فارغاً ليولّده الذكاء الاصطناعي' : 'جملتان بنفس متغيّرات قالب الموقف' }}">{{ old('scenario') }}</textarea></div>
+                    @error('variant')<p class="error small">{{ $message }}</p>@enderror
+                    <button class="btn btn-secondary" type="submit">{{ $aiEnabled ? 'ولّد أو احفظ كمسودة' : 'احفظ كمسودة' }}</button>
+                </form>
                 @else<a class="btn btn-text" href="{{ route('admin.academy.lessons.edit', ['lesson' => $lesson, 'part' => $s['part']]) }}{{ isset($s['question_id']) ? '#question-'.$s['question_id'] : '' }}">افتح الجزء ←</a>@endif
             </div>
             @endforeach
+            <div id="studio-variants"><h3 style="font-size:15px;margin:4px 0 8px">المتغيّرات المحفوظة</h3>
+                @forelse($variants as $v)
+                <div class="suggestion variant" id="variant-{{ $v->id }}" data-variant="{{ $v->id }}">
+                    <h4>{{ $v->audience }} <span class="card-tag">{{ $v->scenario === $lesson->scenario_template ? 'مطبّق الآن' : ($v->applied_at ? 'طُبّق في v'.$v->applied_version : 'مسودة') }}</span></h4>
+                    <p>{{ $v->scenario }}</p>
+                    <p class="small">{{ $v->source === 'ai' ? 'من الذكاء الاصطناعي' : 'كتابة يدوية' }} · {{ $v->created_at->diffForHumans() }}</p>
+                    <div class="row variant-actions">
+                        @if($v->scenario !== $lesson->scenario_template)<form method="post" action="{{ route('admin.academy.lessons.variants.apply', [$lesson, $v]) }}" data-confirm="تطبيق متغيّر «{{ $v->audience }}» يستبدل قالب موقف الدرس{{ $lesson->isPublished() ? ' المنشور' : '' }} كإصدار جديد قابل للرجوع. متابعة؟">@csrf<button class="btn btn-secondary" type="submit">طبّق كإصدار جديد</button></form>@endif
+                        <form method="post" action="{{ route('admin.academy.lessons.variants.destroy', [$lesson, $v]) }}" data-confirm="حذف متغيّر «{{ $v->audience }}» نهائياً؟">@csrf @method('DELETE')<button class="btn btn-text" type="submit">احذف</button></form>
+                    </div>
+                </div>
+                @empty<p class="muted small">لا متغيّرات محفوظة بعد.</p>@endforelse
+            </div>
         </aside>
     </div>
 </div></section>
 @endsection
+@push('scripts')
+<script nonce="{{ $cspNonce }}">document.querySelectorAll('form[data-confirm]').forEach(function(f){f.addEventListener('submit',function(e){if(!window.confirm(f.dataset.confirm))e.preventDefault()})});</script>
+@endpush

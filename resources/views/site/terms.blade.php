@@ -2,6 +2,7 @@
 @section('title', 'شروط الاستخدام — أثر')
 @section('description', 'شروط استخدام محتوى أثر وأدواتها والقوالب والشهادات والخدمات المدفوعة.')
 @section('content')
+<x-athar.schema :data="['@type' => 'WebPage', 'name' => html_entity_decode(trim($__env->yieldContent('title')), ENT_QUOTES), 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => url()->current(), 'inLanguage' => 'ar', 'isPartOf' => ['@type' => 'WebSite', 'name' => 'أثر', 'url' => route('home')]]" />
 <section class="page-hero"><div class="narrow"><x-athar.breadcrumbs :items="[['شروط الاستخدام', null]]" /><h1>شروط الاستخدام</h1><p>آخر تحديث: 29 أكتوبر 2026</p></div></section>
 <section class="section-tight"><article class="narrow article-body">
 <h2>الغرض من المنصة</h2><p>أثر منصة للتعلّم والتطبيق في التسويق. الأمثلة والمحاكاة والحاسبات تساعدك في اتخاذ القرار وفق افتراضات معلنة. النتائج التجارية تتأثر بمشروعك والسوق والتنفيذ، ولا توجد نتيجة مضمونة.</p>

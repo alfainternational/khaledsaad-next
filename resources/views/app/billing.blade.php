@@ -17,8 +17,8 @@
                 <h2>{{ $workspace->name }}</h2>
                 <p class="price">{{ $workspace->balance }} <span>رصيد متاح</span></p>
                 <ul class="list">
-                    <li><span>الخطة</span><strong>{{ $workspace->subscription->plan ?? 'free' }}</strong></li>
-                    <li><span>الحالة</span><strong>{{ $ended ? 'انتهت الفترة المدفوعة' : ($workspace->subscription->status ?? 'active') }}</strong></li>
+                    <li><span>الخطة</span><strong>{{ ['free' => 'المجانية', 'pro' => 'الاحترافية'][$workspace->subscription->plan ?? 'free'] ?? ($workspace->subscription->plan ?? 'المجانية') }}</strong></li>
+                    <li><span>الحالة</span><strong>{{ $ended ? 'انتهت الفترة المدفوعة' : (['active' => 'نشطة', 'canceled' => 'ملغاة', 'cancelled' => 'ملغاة', 'past_due' => 'متأخرة السداد', 'pending' => 'بانتظار الدفع'][$workspace->subscription->status ?? 'active'] ?? ($workspace->subscription->status ?? 'نشطة')) }}</strong></li>
                     @if($workspace->subscription?->ends_at)<li><span>نهاية الفترة</span><span class="when">{{ \Illuminate\Support\Carbon::parse($workspace->subscription->ends_at)->format('Y/m/d') }}</span></li>@endif
                 </ul>
             </article>

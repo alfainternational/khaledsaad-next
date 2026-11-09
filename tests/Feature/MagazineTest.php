@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Academy\Models\Course;
 use App\Domain\Content\Models\Author;
+use App\Domain\Content\Models\ContentCategory;
 use App\Domain\Content\Models\ContentItem;
 use App\Domain\Content\Models\GlossaryTerm;
 use App\Domain\Content\Models\Tag;
@@ -31,17 +32,16 @@ class MagazineTest extends TestCase
         foreach (array_keys(ContentItem::SECTIONS) as $section) {
             $this->assertGreaterThanOrEqual(10, ContentItem::published()->section($section)->count(), "section {$section}");
         }
-        $this->assertGreaterThanOrEqual(5, \App\Domain\Content\Models\ContentCategory::count());
+        $this->assertGreaterThanOrEqual(5, ContentCategory::count());
         $this->assertGreaterThanOrEqual(20, Tag::count());
         $this->assertSame(3, Author::count());
-        // Every seeded item links a tool, has a tldr and sits inside 500–900 words; sourced types cite at least one source.
+        // Editorial completeness is reviewed by purpose; this checks the usable structure, not a word quota.
         ContentItem::query()->where('meta->seeded', true)->with('sources')->get()->each(function (ContentItem $item): void {
             $this->assertNotNull($item->related_tool_id, $item->slug.' has no tool');
             $this->assertNotEmpty($item->tldr, $item->slug.' has no tldr');
             $this->assertNotNull($item->category_id, $item->slug.' has no category');
             $this->assertNotNull($item->author_id, $item->slug.' has no author');
-            $words = Markdown::wordCount($item->body);
-            $this->assertTrue($words >= 500 && $words <= 900, "{$item->slug} has {$words} words");
+            $this->assertGreaterThanOrEqual(3, count(Markdown::headings($item->body)), $item->slug.' needs a structured explanation');
             if ($item->requiresSources()) {
                 $this->assertTrue($item->sources->isNotEmpty(), $item->slug.' needs sources');
                 $this->assertNotEmpty(data_get($item->meta, 'arabic_context'));

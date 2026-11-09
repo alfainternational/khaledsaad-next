@@ -2,7 +2,7 @@
 @section('title', 'أثر — تعلّم. طبّق. قِس الأثر.')
 @section('description', 'منصة تعلّم بالممارسة للتسويق والذكاء الاصطناعي: جرّب على مشروعك الآن بلا تسجيل، شخّص مشروعك، واخرج من كل درس بأصل يُقاس في الواقع.')
 @push('structured-data')
-<script type="application/ld+json" nonce="{{ $cspNonce }}">{!! json_encode([['@'.'context' => 'https://schema.org', '@type' => 'Organization', 'name' => 'أثر', 'url' => url('/'), 'logo' => url('/favicon.ico')], ['@'.'context' => 'https://schema.org', '@type' => 'WebSite', 'name' => 'أثر', 'url' => url('/'), 'potentialAction' => ['@type' => 'SearchAction', 'target' => route('search').'?q={search_term_string}', 'query-input' => 'required name=search_term_string']]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+<script type="application/ld+json" nonce="{{ $cspNonce }}">{!! json_encode([['@'.'context' => 'https://schema.org', '@type' => 'Organization', 'name' => 'أثر', 'url' => url('/'), 'logo' => asset('images/logo.png')], ['@'.'context' => 'https://schema.org', '@type' => 'WebSite', 'name' => 'أثر', 'url' => url('/'), 'potentialAction' => ['@type' => 'SearchAction', 'target' => route('search').'?q={search_term_string}', 'query-input' => 'required name=search_term_string']]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
 @endpush
 @section('content')
 @php($problems = \App\Domain\Assessment\Services\Catalog::PROBLEMS)
@@ -76,12 +76,12 @@
 
 <section class="section section-soft"><div class="shell">
     <div class="section-heading split"><div><x-athar.kicker>المختبر</x-athar.kicker><h2>أدوات تغذّي سلسلة أصولك</h2></div><x-athar.button variant="text" href="{{ route('tools.index') }}">افتح المختبر ←</x-athar.button></div>
-    <div class="grid grid-3">@foreach($tools as $tool)<x-athar.card :title="$tool->name" :desc="$tool->description" :tag="$tool->category" :href="route('tools.show', $tool)"><p class="outcome"><b>يغذّي:</b> {{ ['التخطيط' => 'خطة القناة الأولى وخطة التسويق', 'المحتوى' => 'تقويم المحتوى والرسالة الأساسية', 'التحويل' => 'صفحة الهبوط وخطة القياس'][$tool->category] ?? 'الأصول التالية في السلسلة' }}</p><x-slot:meta><span>{{ $tool->credit_cost ? $tool->credit_cost.' رصيد' : 'مجاني بلا AI' }}</span></x-slot:meta></x-athar.card>@endforeach</div>
+    <div class="grid grid-3">@foreach($tools as $tool)<x-athar.card :title="$tool->name" :desc="$tool->description" :tag="$tool->category" :href="route('tools.show', $tool)"><p class="outcome"><b>يغذّي:</b> {{ collect($tool->feeds_into ?? [])->map(fn ($type) => \App\Domain\Lab\Services\LabCatalog::label($type))->implode('، ') ?: 'خطة مشروعك المجمّعة' }}</p><x-slot:meta><span>{{ $tool->credit_cost ? $tool->credit_cost.' رصيد' : 'مجاني بلا AI' }}</span></x-slot:meta></x-athar.card>@endforeach</div>
 </div></section>
 
 <section class="section"><div class="shell">
     <div class="section-heading split"><div><x-athar.kicker>من المجلة</x-athar.kicker><h2>اقرأ ثم طبّق بأداة</h2></div><x-athar.button variant="text" href="{{ route('articles.index') }}">كل المواد ←</x-athar.button></div>
-    <div class="grid grid-3">@foreach($articles as $article)<x-athar.card heading="h3" :title="$article->title" :desc="$article->excerpt" :tag="$article->eyebrow" :href="route('articles.show', $article)"><p class="outcome"><b>طبّق بـ:</b> {{ $tools->first()?->name ?? 'المختبر' }}</p><x-slot:meta><span>{{ $article->reading_minutes }} دقائق</span><span>{{ $article->published_at?->format('Y/m/d') }}</span></x-slot:meta></x-athar.card>@endforeach</div>
+    <div class="grid grid-3">@foreach($articles as $article)<x-athar.card heading="h3" :title="$article->title" :desc="$article->excerpt" :tag="$article->eyebrow" :href="route('articles.show', $article)"><p class="outcome"><b>طبّق بـ:</b> {{ $article->relatedTool?->name ?? 'المختبر' }}</p><x-slot:meta><span>{{ $article->reading_minutes }} دقائق</span><span>{{ $article->published_at?->format('Y/m/d') }}</span></x-slot:meta></x-athar.card>@endforeach</div>
 </div></section>
 
 <section class="section section-tight"><div class="shell"><div class="cta-band"><div><x-athar.kicker>دعوة أخيرة</x-athar.kicker><h2>شخّص مشروعك مجاناً</h2><p class="muted" style="margin:0">ثلاث مراحل، عشر دقائق، وتخرج بخريطة أولويات قابلة للتنزيل بلا تسجيل.</p></div><x-athar.button href="{{ route('assess.start') }}">ابدأ التشخيص</x-athar.button></div></div></section>

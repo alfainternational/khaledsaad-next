@@ -2,6 +2,7 @@
 @section('title', 'سياسة الخصوصية — أثر')
 @section('description', 'كيف تستخدم أثر بيانات الحساب والتقدم والمشروعات والتواصل، وكيف تتحكم في مشاركة أصولك وتطلب المساعدة.')
 @section('content')
+<x-athar.schema :data="['@type' => 'WebPage', 'name' => html_entity_decode(trim($__env->yieldContent('title')), ENT_QUOTES), 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => url()->current(), 'inLanguage' => 'ar', 'isPartOf' => ['@type' => 'WebSite', 'name' => 'أثر', 'url' => route('home')]]" />
 <section class="page-hero"><div class="narrow"><x-athar.breadcrumbs :items="[['سياسة الخصوصية', null]]" /><h1>سياسة الخصوصية</h1><p>آخر تحديث: 29 أكتوبر 2026</p></div></section>
 <section class="section-tight"><article class="narrow article-body">
 <h2>البيانات التي نستخدمها</h2><p>نحفظ اسم الحساب وبريده وكلمة المرور بصورة مجزأة، والتقدم الدراسي، ونتائج التشخيص، وبيانات المشروع والأصول التي تحفظها. تُستخدم أحداث التفاعل لتحسين الدروس والأدوات، وتُجمع بيانات التواصل عند إرسال رسالة.</p>

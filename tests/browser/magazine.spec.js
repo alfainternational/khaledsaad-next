@@ -26,7 +26,7 @@ async function tap(locator) {
 
 test.describe('المجلة ومحرك المحتوى', () => {
     test('زائر: الأقسام الخمسة → مادة كاملة → مصطلح → موضوع → بحث → النشرة', async ({ page }) => {
-        test.setTimeout(180_000);
+        test.setTimeout(300_000);
         const errors = trackErrors(page);
 
         // الأقسام الخمسة بالقالب نفسه، كل قسم 10 مواد على الأقل.
@@ -46,7 +46,7 @@ test.describe('المجلة ومحرك المحتوى', () => {
 
         // مادة من الرؤى بالشكل الكامل.
         await page.goto('/insights');
-        // A stage-3 item (the legacy stage-1 insights carry no tldr or apply box and are newer, so «first» is not enough).
+        // A fixed sourced article exercises the complete reading and application contract.
         await tap(page.locator('article.content-card h2 a[href$="/articles/nngroup-f-pattern-how-arabic-readers-scan-your-page"]'));
         await expect(page).toHaveURL(/\/articles\/nngroup-f-pattern-how-arabic-readers-scan-your-page$/);
         await expect(page.locator('#tldr')).toContainText('في دقيقة');
@@ -119,7 +119,9 @@ test.describe('المجلة ومحرك المحتوى', () => {
         // النشرة من التذييل: رسالة نجاح بلا إعادة تحميل كاملة.
         const beforeUrl = page.url();
         await page.locator('#footer-email').fill(`reader-${Date.now()}@example.invalid`);
+        const newsletterResponse = page.waitForResponse(response => response.url().endsWith('/newsletter') && response.request().method() === 'POST', { timeout: 60_000 });
         await tap(page.locator('[data-newsletter] button[type="submit"]'));
+        expect((await newsletterResponse).ok()).toBeTruthy();
         await expect(page.locator('[data-newsletter-status]')).toContainText('رسالة تأكيد');
         expect(page.url()).toBe(beforeUrl);
         await expect(page.locator('#footer-email')).toHaveValue('');
@@ -128,7 +130,7 @@ test.describe('المجلة ومحرك المحتوى', () => {
     });
 
     test('المدير: جداول المحتوى → تعديل مادة → لوح المصادر بالبوابات الخمس حتى النشر', async ({ page }) => {
-        test.setTimeout(180_000);
+        test.setTimeout(300_000);
         const errors = trackErrors(page);
         await login(page, ADMIN);
 

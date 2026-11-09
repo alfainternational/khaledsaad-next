@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 class EventRecorder
 {
     public const EVENTS = [
-        'visit.home', 'visit.lesson', 'lesson.part_reached', 'lesson.opening_decided', 'lesson.final_decided', 'lesson.lab_generated',
+        'visit.home', 'visit.lesson', 'lesson.part_reached', 'lesson.opening_decided', 'lesson.final_decided', 'lesson.lab_generated', 'lesson.asset_enhanced',
         'lesson.whatif_used', 'asset.saved', 'asset.copied', 'asset.downloaded', 'question.answered', 'template.downloaded',
         'assessment.started', 'assessment.completed', 'checkin.committed', 'checkin.recorded', 'coach.asked', 'report.sent', 'lesson.completed',
         'home.first_step', 'visit.tool', 'tool.generated', 'tool.enhanced', 'asset.shared', 'calculator.used', 'simulator.used',

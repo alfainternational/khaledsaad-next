@@ -61,16 +61,16 @@ Route::get('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'uns
 
 // تشخيص مشروعك (§4.2)
 Route::get('/assess', [AssessController::class, 'start'])->name('assess.start');
-Route::post('/assess/project', [AssessController::class, 'storeProject'])->name('assess.project');
+Route::post('/assess/project', [AssessController::class, 'storeProject'])->middleware('throttle:events')->name('assess.project');
 Route::get('/assess/questions', [AssessController::class, 'questions'])->name('assess.questions');
-Route::post('/assess/submit', [AssessController::class, 'submit'])->name('assess.submit');
+Route::post('/assess/submit', [AssessController::class, 'submit'])->middleware('throttle:events')->name('assess.submit');
 Route::get('/assess/result', [AssessController::class, 'result'])->name('assess.result');
 
 // الأكاديمية (§4.3–4.5)
 Route::get('/academy', [AcademyController::class, 'index'])->name('academy.index');
 Route::get('/academy/{course}', [AcademyController::class, 'course'])->name('academy.show');
 Route::get('/academy/{course}/{lesson}', [LessonController::class, 'show'])->name('academy.lesson');
-Route::post('/academy/{course}/{lesson}/lab', [LessonController::class, 'lab'])->name('academy.lesson.lab');
+Route::post('/academy/{course}/{lesson}/lab', [LessonController::class, 'lab'])->middleware('throttle:events')->name('academy.lesson.lab');
 Route::get('/academy/{course}/{lesson}/whatif', [LessonController::class, 'whatIf'])->middleware('throttle:events')->name('academy.lesson.whatif');
 Route::post('/academy/{course}/{lesson}/decision', [LessonController::class, 'decision'])->middleware('throttle:events')->name('academy.lesson.decision');
 Route::post('/academy/{course}/{lesson}/report', [LessonController::class, 'report'])->middleware('throttle:reports')->name('academy.lesson.report');
@@ -78,7 +78,7 @@ Route::get('/resources/{template}/download', [ResourceController::class, 'downlo
 Route::get('/resources/{template}', [ResourceController::class, 'show'])->name('resources.show');
 Route::get('/certificates/{code}', [CertificateController::class, 'show'])->middleware('throttle:search')->name('certificates.show');
 
-Route::post('/assets/print', [AssetController::class, 'print'])->name('assets.print');
+Route::post('/assets/print', [AssetController::class, 'print'])->middleware('throttle:events')->name('assets.print');
 Route::post('/events', [EventController::class, 'store'])->middleware('throttle:events')->name('events.store');
 
 // المختبر (§4.6–4.8): المولدات تعمل للزائر بلا AI؛ الحاسبات والمحاكي مجانية؛ /a/{token} صفحة قراءة عامة لأصل مشترك.
@@ -98,7 +98,7 @@ Route::view('/terms', 'site.terms')->name('terms');
 Route::get('/search', SearchController::class)->middleware('throttle:search')->name('search');
 Route::get('/sitemap.xml', [PublicSiteController::class, 'sitemap'])->name('sitemap');
 Route::get('/feed.xml', [PublicSiteController::class, 'feed'])->name('feed');
-Route::get('/llms.txt', fn () => response()->view('site.llms')->header('Content-Type', 'text/plain; charset=utf-8'))->name('llms');
+Route::get('/llms.txt', [PublicSiteController::class, 'llms'])->name('llms');
 // Operational health for external monitoring: no secrets, 503 when a background heartbeat is stale.
 Route::get('/health.json', function () {
     $now = now()->timestamp;
@@ -123,6 +123,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/academy/{course}/{lesson}/checkin', [LessonController::class, 'checkin'])->name('academy.lesson.checkin');
     Route::post('/academy/{course}/{lesson}/result', [LessonController::class, 'result'])->name('academy.lesson.result');
     Route::post('/academy/{course}/{lesson}/coach', [LessonController::class, 'coach'])->middleware('throttle:ai')->name('academy.lesson.coach');
+    Route::post('/academy/{course}/{lesson}/enhance', [LessonController::class, 'enhance'])->middleware('throttle:ai')->name('academy.lesson.enhance');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -146,73 +147,81 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/app/outputs/{output}/share', [OutputController::class, 'share'])->name('app.outputs.share');
     Route::delete('/app/outputs/{output}/share', [OutputController::class, 'unshare'])->name('app.outputs.unshare');
 
-    // غرفة التحكم (§6.1) والاستوديو (§6.2) وإدارة الاختبار (§6.5)
-    Route::get('/admin', [ControlRoomController::class, 'index'])->name('admin.index');
-    Route::post('/admin/quality/recompute', [ControlRoomController::class, 'recompute'])->name('admin.quality.recompute');
-    Route::patch('/admin/quality/{signal}', [ControlRoomController::class, 'signalStatus'])->name('admin.quality.status');
-    Route::post('/admin/preview/{as}', [ControlRoomController::class, 'preview'])->name('admin.preview');
-    Route::get('/admin/academy', [AdminAcademyController::class, 'index'])->name('admin.academy.index');
-    Route::patch('/admin/academy/courses/{course}', [AdminAcademyController::class, 'updateCourse'])->name('admin.academy.courses.update');
-    Route::get('/admin/academy/lessons/{lesson:id}', [AdminAcademyController::class, 'edit'])->name('admin.academy.lessons.edit');
-    Route::put('/admin/academy/lessons/{lesson:id}', [AdminAcademyController::class, 'update'])->name('admin.academy.lessons.update');
-    Route::post('/admin/academy/lessons/{lesson:id}/restore/{version}', [AdminAcademyController::class, 'restore'])->name('admin.academy.lessons.restore');
-    Route::post('/admin/academy/lessons/{lesson:id}/variant', [AdminAcademyController::class, 'variant'])->middleware('throttle:ai')->name('admin.academy.lessons.variant');
-    Route::get('/admin/assessment', [AdminAssessmentController::class, 'index'])->name('admin.assessment.index');
-    Route::post('/admin/assessment/questions', [AdminAssessmentController::class, 'storeQuestion'])->name('admin.assessment.questions.store');
-    Route::put('/admin/assessment/questions/{question}', [AdminAssessmentController::class, 'updateQuestion'])->name('admin.assessment.questions.update');
-    Route::delete('/admin/assessment/questions/{question}', [AdminAssessmentController::class, 'destroyQuestion'])->name('admin.assessment.questions.destroy');
-    Route::post('/admin/assessment/rules', [AdminAssessmentController::class, 'saveRule'])->name('admin.assessment.rules.save');
+    // كل ما تحت /admin خلف وسيط staff (أدوار الموظفين)؛ الفحص الأدق لكل دور يبقى داخل كل متحكم.
+    Route::middleware('staff')->group(function () {
+        // غرفة التحكم (§6.1) والاستوديو (§6.2) وإدارة الاختبار (§6.5)
+        Route::get('/admin', [ControlRoomController::class, 'index'])->name('admin.index');
+        Route::post('/admin/quality/recompute', [ControlRoomController::class, 'recompute'])->name('admin.quality.recompute');
+        Route::patch('/admin/quality/{signal}', [ControlRoomController::class, 'signalStatus'])->name('admin.quality.status');
+        Route::post('/admin/preview/{as}', [ControlRoomController::class, 'preview'])->name('admin.preview');
+        // صندوق نجاح المتعلمين (§6.1 رقم 6): إغلاق البلاغات وتذكير «أصلك ينتظرك».
+        Route::patch('/admin/reports/{report}', [ControlRoomController::class, 'reportStatus'])->whereNumber('report')->name('admin.reports.update');
+        Route::post('/admin/nudges', [ControlRoomController::class, 'nudge'])->name('admin.nudges.store');
+        Route::get('/admin/academy', [AdminAcademyController::class, 'index'])->name('admin.academy.index');
+        Route::patch('/admin/academy/courses/{course}', [AdminAcademyController::class, 'updateCourse'])->name('admin.academy.courses.update');
+        Route::get('/admin/academy/lessons/{lesson:id}', [AdminAcademyController::class, 'edit'])->name('admin.academy.lessons.edit');
+        Route::put('/admin/academy/lessons/{lesson:id}', [AdminAcademyController::class, 'update'])->name('admin.academy.lessons.update');
+        Route::post('/admin/academy/lessons/{lesson:id}/restore/{version}', [AdminAcademyController::class, 'restore'])->name('admin.academy.lessons.restore');
+        Route::post('/admin/academy/lessons/{lesson:id}/variant', [AdminAcademyController::class, 'variant'])->middleware('throttle:ai')->name('admin.academy.lessons.variant');
+        Route::post('/admin/academy/lessons/{lesson:id}/variants/{variant}/apply', [AdminAcademyController::class, 'applyVariant'])->whereNumber('variant')->name('admin.academy.lessons.variants.apply');
+        Route::delete('/admin/academy/lessons/{lesson:id}/variants/{variant}', [AdminAcademyController::class, 'destroyVariant'])->whereNumber('variant')->name('admin.academy.lessons.variants.destroy');
+        Route::get('/admin/assessment', [AdminAssessmentController::class, 'index'])->name('admin.assessment.index');
+        Route::post('/admin/assessment/questions', [AdminAssessmentController::class, 'storeQuestion'])->name('admin.assessment.questions.store');
+        Route::put('/admin/assessment/questions/{question}', [AdminAssessmentController::class, 'updateQuestion'])->name('admin.assessment.questions.update');
+        Route::delete('/admin/assessment/questions/{question}', [AdminAssessmentController::class, 'destroyQuestion'])->name('admin.assessment.questions.destroy');
+        Route::post('/admin/assessment/rules', [AdminAssessmentController::class, 'saveRule'])->name('admin.assessment.rules.save');
 
-    // إدارة المحتوى الموسعة (§6.5): المواد والتصنيفات والوسوم والمؤلفون بجداول قياسية، وكل تغيير في التدقيق.
-    Route::get('/admin/content', [AdminContentController::class, 'index'])->name('admin.content.index');
-    Route::get('/admin/content/create', [AdminContentController::class, 'create'])->name('admin.content.create');
-    Route::post('/admin/content', [AdminContentController::class, 'store'])->name('admin.content.store');
-    Route::get('/admin/content/{kind}', [TaxonomyController::class, 'index'])->whereIn('kind', ['categories', 'tags', 'authors'])->name('admin.content.taxonomy');
-    Route::post('/admin/content/{kind}', [TaxonomyController::class, 'store'])->whereIn('kind', ['categories', 'tags', 'authors'])->name('admin.content.taxonomy.store');
-    Route::put('/admin/content/{kind}/{id}', [TaxonomyController::class, 'update'])->whereIn('kind', ['categories', 'tags', 'authors'])->whereNumber('id')->name('admin.content.taxonomy.update');
-    Route::delete('/admin/content/{kind}/{id}', [TaxonomyController::class, 'destroy'])->whereIn('kind', ['categories', 'tags', 'authors'])->whereNumber('id')->name('admin.content.taxonomy.destroy');
-    Route::get('/admin/content/{contentItem:id}/edit', [AdminContentController::class, 'edit'])->name('admin.content.edit');
-    Route::put('/admin/content/{contentItem:id}', [AdminContentController::class, 'update'])->name('admin.content.update');
-    Route::delete('/admin/content/{contentItem:id}', [AdminContentController::class, 'destroy'])->name('admin.content.destroy');
-    Route::post('/admin/content/{contentItem:id}/publish', [AdminContentController::class, 'publish'])->name('admin.content.publish');
-    Route::post('/admin/content/{contentItem:id}/clean', [AdminContentController::class, 'clean'])->name('admin.content.clean');
-    // من المصادر إلى الرؤى (§6.3): لوح البوابات الخمس.
-    Route::get('/admin/sources', [SourcesController::class, 'index'])->name('admin.sources.index');
-    Route::post('/admin/sources/fetch', [SourcesController::class, 'fetch'])->name('admin.sources.fetch');
-    Route::post('/admin/sources/items', [SourcesController::class, 'store'])->name('admin.sources.store');
-    Route::get('/admin/sources/items/{item}', [SourcesController::class, 'show'])->name('admin.sources.show');
-    Route::post('/admin/sources/items/{item}/verify', [SourcesController::class, 'verify'])->name('admin.sources.verify');
-    Route::post('/admin/sources/items/{item}/summarize', [SourcesController::class, 'summarize'])->middleware('throttle:ai')->name('admin.sources.summarize');
-    Route::post('/admin/sources/items/{item}/contextualize', [SourcesController::class, 'contextualize'])->name('admin.sources.contextualize');
-    Route::post('/admin/sources/items/{item}/review', [SourcesController::class, 'review'])->name('admin.sources.review');
-    Route::post('/admin/sources/items/{item}/ignore', [SourcesController::class, 'ignore'])->name('admin.sources.ignore');
-    Route::patch('/admin/sources/feeds/{feed}', [SourcesController::class, 'toggleFeed'])->name('admin.sources.feeds.toggle');
-    Route::get('/admin/operations', [OperationsController::class, 'index'])->name('admin.operations');
-    // الشاشات القياسية (§6.5): المستخدمون والأدوار، الخطط والدفع، التحويلات (+CSV)، سجل التدقيق.
-    Route::get('/admin/users', [UsersController::class, 'index'])->name('admin.users.index');
-    Route::patch('/admin/users/{user}', [UsersController::class, 'updateRole'])->name('admin.users.update');
-    Route::post('/admin/users/{user}/impersonate', [UsersController::class, 'impersonate'])->name('admin.users.impersonate');
-    Route::post('/admin/impersonation/stop', [UsersController::class, 'stopImpersonation'])->withoutMiddleware('verified')->name('admin.impersonation.stop');
-    Route::get('/admin/plans', [PlanController::class, 'index'])->name('admin.plans.index');
-    Route::get('/admin/redirects', [RedirectsController::class, 'index'])->name('admin.redirects.index');
-    Route::post('/admin/redirects/import', [RedirectsController::class, 'import'])->name('admin.redirects.import');
-    Route::post('/admin/redirects', [RedirectsController::class, 'store'])->name('admin.redirects.store');
-    Route::delete('/admin/redirects/{redirect}', [RedirectsController::class, 'destroy'])->whereNumber('redirect')->name('admin.redirects.destroy');
-    Route::get('/admin/audit', [AuditController::class, 'index'])->name('admin.audit.index');
-    Route::patch('/admin/plans/{plan}', [PlanController::class, 'update'])->name('admin.plans.update');
-    // رسائل الاتصال (§4.13): كل رسالة مسجّلة في قاعدة البيانات مع حالتها.
-    Route::get('/admin/contact-messages', [ContactMessagesController::class, 'index'])->name('admin.contact-messages.index');
-    Route::patch('/admin/contact-messages/{message}', [ContactMessagesController::class, 'update'])->whereNumber('message')->name('admin.contact-messages.update');
+        // إدارة المحتوى الموسعة (§6.5): المواد والتصنيفات والوسوم والمؤلفون بجداول قياسية، وكل تغيير في التدقيق.
+        Route::get('/admin/content', [AdminContentController::class, 'index'])->name('admin.content.index');
+        Route::get('/admin/content/create', [AdminContentController::class, 'create'])->name('admin.content.create');
+        Route::post('/admin/content', [AdminContentController::class, 'store'])->name('admin.content.store');
+        Route::get('/admin/content/{kind}', [TaxonomyController::class, 'index'])->whereIn('kind', ['categories', 'tags', 'authors'])->name('admin.content.taxonomy');
+        Route::post('/admin/content/{kind}', [TaxonomyController::class, 'store'])->whereIn('kind', ['categories', 'tags', 'authors'])->name('admin.content.taxonomy.store');
+        Route::put('/admin/content/{kind}/{id}', [TaxonomyController::class, 'update'])->whereIn('kind', ['categories', 'tags', 'authors'])->whereNumber('id')->name('admin.content.taxonomy.update');
+        Route::delete('/admin/content/{kind}/{id}', [TaxonomyController::class, 'destroy'])->whereIn('kind', ['categories', 'tags', 'authors'])->whereNumber('id')->name('admin.content.taxonomy.destroy');
+        Route::get('/admin/content/{contentItem:id}/edit', [AdminContentController::class, 'edit'])->name('admin.content.edit');
+        Route::put('/admin/content/{contentItem:id}', [AdminContentController::class, 'update'])->name('admin.content.update');
+        Route::delete('/admin/content/{contentItem:id}', [AdminContentController::class, 'destroy'])->name('admin.content.destroy');
+        Route::post('/admin/content/{contentItem:id}/publish', [AdminContentController::class, 'publish'])->name('admin.content.publish');
+        Route::post('/admin/content/{contentItem:id}/clean', [AdminContentController::class, 'clean'])->name('admin.content.clean');
+        // من المصادر إلى الرؤى (§6.3): لوح البوابات الخمس.
+        Route::get('/admin/sources', [SourcesController::class, 'index'])->name('admin.sources.index');
+        Route::post('/admin/sources/fetch', [SourcesController::class, 'fetch'])->name('admin.sources.fetch');
+        Route::post('/admin/sources/items', [SourcesController::class, 'store'])->name('admin.sources.store');
+        Route::get('/admin/sources/items/{item}', [SourcesController::class, 'show'])->name('admin.sources.show');
+        Route::post('/admin/sources/items/{item}/verify', [SourcesController::class, 'verify'])->name('admin.sources.verify');
+        Route::post('/admin/sources/items/{item}/summarize', [SourcesController::class, 'summarize'])->middleware('throttle:ai')->name('admin.sources.summarize');
+        Route::post('/admin/sources/items/{item}/contextualize', [SourcesController::class, 'contextualize'])->name('admin.sources.contextualize');
+        Route::post('/admin/sources/items/{item}/review', [SourcesController::class, 'review'])->name('admin.sources.review');
+        Route::post('/admin/sources/items/{item}/ignore', [SourcesController::class, 'ignore'])->name('admin.sources.ignore');
+        Route::patch('/admin/sources/feeds/{feed}', [SourcesController::class, 'toggleFeed'])->name('admin.sources.feeds.toggle');
+        Route::get('/admin/operations', [OperationsController::class, 'index'])->name('admin.operations');
+        // الشاشات القياسية (§6.5): المستخدمون والأدوار، الخطط والدفع، التحويلات (+CSV)، سجل التدقيق.
+        Route::get('/admin/users', [UsersController::class, 'index'])->name('admin.users.index');
+        Route::patch('/admin/users/{user}', [UsersController::class, 'updateRole'])->name('admin.users.update');
+        Route::post('/admin/users/{user}/impersonate', [UsersController::class, 'impersonate'])->name('admin.users.impersonate');
+        Route::post('/admin/impersonation/stop', [UsersController::class, 'stopImpersonation'])->withoutMiddleware(['verified', 'staff'])->name('admin.impersonation.stop');
+        Route::get('/admin/plans', [PlanController::class, 'index'])->name('admin.plans.index');
+        Route::get('/admin/redirects', [RedirectsController::class, 'index'])->name('admin.redirects.index');
+        Route::post('/admin/redirects/import', [RedirectsController::class, 'import'])->name('admin.redirects.import');
+        Route::post('/admin/redirects', [RedirectsController::class, 'store'])->name('admin.redirects.store');
+        Route::delete('/admin/redirects/{redirect}', [RedirectsController::class, 'destroy'])->whereNumber('redirect')->name('admin.redirects.destroy');
+        Route::get('/admin/audit', [AuditController::class, 'index'])->name('admin.audit.index');
+        Route::patch('/admin/plans/{plan}', [PlanController::class, 'update'])->name('admin.plans.update');
+        // رسائل الاتصال (§4.13): كل رسالة مسجّلة في قاعدة البيانات مع حالتها.
+        Route::get('/admin/contact-messages', [ContactMessagesController::class, 'index'])->name('admin.contact-messages.index');
+        Route::patch('/admin/contact-messages/{message}', [ContactMessagesController::class, 'update'])->whereNumber('message')->name('admin.contact-messages.update');
 
-    // استوديو الأداة (§6.4)
-    Route::get('/admin/tools', [ToolStudioController::class, 'index'])->name('admin.tools.index');
-    Route::get('/admin/tools/{tool:id}', [ToolStudioController::class, 'show'])->name('admin.tools.show');
-    Route::put('/admin/tools/{tool:id}', [ToolStudioController::class, 'update'])->name('admin.tools.update');
-    Route::post('/admin/tools/{tool:id}/versions', [ToolStudioController::class, 'storeVersion'])->name('admin.tools.versions.store');
-    Route::post('/admin/tools/{tool:id}/versions/{version}/activate', [ToolStudioController::class, 'activateVersion'])->name('admin.tools.versions.activate');
-    Route::post('/admin/tools/{tool:id}/test', [ToolStudioController::class, 'test'])->name('admin.tools.test');
-    Route::post('/admin/tools/{tool:id}/experiment', [ToolStudioController::class, 'startExperiment'])->name('admin.tools.experiment.start');
-    Route::post('/admin/tools/{tool:id}/experiment/{experiment}/end', [ToolStudioController::class, 'endExperiment'])->name('admin.tools.experiment.end');
+        // استوديو الأداة (§6.4)
+        Route::get('/admin/tools', [ToolStudioController::class, 'index'])->name('admin.tools.index');
+        Route::get('/admin/tools/{tool:id}', [ToolStudioController::class, 'show'])->name('admin.tools.show');
+        Route::put('/admin/tools/{tool:id}', [ToolStudioController::class, 'update'])->name('admin.tools.update');
+        Route::post('/admin/tools/{tool:id}/versions', [ToolStudioController::class, 'storeVersion'])->name('admin.tools.versions.store');
+        Route::post('/admin/tools/{tool:id}/versions/{version}/activate', [ToolStudioController::class, 'activateVersion'])->name('admin.tools.versions.activate');
+        Route::post('/admin/tools/{tool:id}/test', [ToolStudioController::class, 'test'])->name('admin.tools.test');
+        Route::post('/admin/tools/{tool:id}/experiment', [ToolStudioController::class, 'startExperiment'])->name('admin.tools.experiment.start');
+        Route::post('/admin/tools/{tool:id}/experiment/{experiment}/end', [ToolStudioController::class, 'endExperiment'])->name('admin.tools.experiment.end');
+    });
 });
 
 require __DIR__.'/auth.php';

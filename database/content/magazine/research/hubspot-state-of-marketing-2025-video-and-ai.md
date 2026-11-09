@@ -11,6 +11,8 @@ topic: integrated-marketing-plan
 tool: prompt-builder
 reading_minutes: 7
 published_at: 2026-07-30
+last_reviewed_at: 2026-10-30
+editorial_revision: reading-2026-10
 eyebrow: قراءة في تقرير
 excerpt: تقرير HubSpot السنوي يضع الفيديو القصير في صدارة الصيغ من حيث العائد ويرصد تحوّل الذكاء الاصطناعي إلى أداة يومية. ما الذي يقيسه التقرير فعلاً، وكيف تترجمه خطة شركة سعودية؟
 tldr: في تقرير HubSpot لحالة التسويق يحتل الفيديو القصير المرتبة الأولى بين الصيغ التي يقول المسوّقون إنها تحقق أعلى عائد، وينوي معظمهم زيادة الاستثمار فيه، كما بات استخدام الذكاء الاصطناعي في المهام اليومية هو القاعدة لا الاستثناء. لكن «العائد» هنا رأي المسوّقين لا قياس مالي، فاستخدمه لترتيب أولويات الاختبار لا لتبرير الميزانية.
@@ -19,12 +21,10 @@ sources:
   - publisher: HubSpot
     title: The State of Marketing Report
     url: https://www.hubspot.com/state-of-marketing
-    date: 2025-02-01
     language: en
   - publisher: HubSpot
     title: HubSpot Research
     url: https://www.hubspot.com/research
-    date: 2025-01-01
     language: en
 faq:
   - q: هل يعني التقرير أن أوقف المدونة وأتحول للفيديو؟

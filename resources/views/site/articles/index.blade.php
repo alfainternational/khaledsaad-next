@@ -4,6 +4,7 @@
 @section('canonical', $section ? route($section.'.index') : route('articles.index'))
 @if($hasFilters || $items->currentPage() > 1)@section('noindex', '1')@endif
 @section('content')
+<x-athar.schema :data="['@type' => 'CollectionPage', 'name' => $section ? $meta['label'] : 'المجلة', 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => $section ? route($section.'.index') : route('articles.index'), 'inLanguage' => 'ar', 'mainEntity' => ['@type' => 'ItemList', 'numberOfItems' => $items->count(), 'itemListElement' => collect($items->items())->values()->map(fn ($i, $k) => ['@type' => 'ListItem', 'position' => $k + 1, 'name' => $i->title, 'url' => route('articles.show', $i)])->all()]]" />
 <section class="page-hero compact"><div class="shell">
     <x-athar.breadcrumbs :items="$section ? [['المجلة', route('articles.index')], [$meta['label'], null]] : [['المجلة', null]]" />
     <x-athar.kicker>{{ $meta['kicker'] }}</x-athar.kicker>

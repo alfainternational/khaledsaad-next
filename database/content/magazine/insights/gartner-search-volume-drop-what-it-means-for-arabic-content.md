@@ -11,6 +11,8 @@ topic: ai-in-marketing
 tool: prompt-builder
 reading_minutes: 7
 published_at: 2026-07-15
+last_reviewed_at: 2026-10-30
+editorial_revision: reading-2026-10
 eyebrow: رؤية عالمية
 excerpt: قراءة نقدية لتوقع Gartner بتراجع حجم محركات البحث التقليدية بسبب المساعدات الذكية — ما قالته فعلاً، وما لم تقله، وكيف تستعد شركة B2B عربية للظهور في إجابات الذكاء الاصطناعي.
 tldr: توقعت Gartner في فبراير 2024 أن يتراجع حجم محركات البحث التقليدية بنسبة 25% بحلول 2026 لصالح روبوتات المحادثة والوكلاء الافتراضيين. هذا توقع لا قياس، ولا يعني موت SEO، بل يعني أن المحتوى يجب أن يُكتب ليُستشهد به في إجابة، لا ليُنقر عليه فقط.
@@ -19,12 +21,10 @@ sources:
   - publisher: Gartner
     title: Gartner Predicts Search Engine Volume Will Drop 25% by 2026, Due to AI Chatbots and Other Virtual Agents
     url: https://www.gartner.com/en/newsroom/press-releases/2024-02-19-gartner-predicts-search-engine-volume-will-drop-25-percent-by-2026-due-to-ai-chatbots-and-other-virtual-agents
-    date: 2024-02-19
     language: en
   - publisher: Google Search Central
     title: AI features and your website
     url: https://developers.google.com/search/docs/appearance/ai-features
-    date: 2025-05-21
     language: en
 faq:
   - q: هل يجب أن أوقف الاستثمار في SEO وأتحول إلى GEO؟

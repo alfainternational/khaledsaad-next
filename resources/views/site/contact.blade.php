@@ -2,6 +2,7 @@
 @section('title', 'تواصل مع أثر')
 @section('description', 'أرسل استفسارًا أو اقتراحًا لفريق أثر، أو تواصل عبر بريد الدعم لتصحيح مادة أو طلب المساعدة.')
 @section('content')
+<x-athar.schema :data="['@type' => 'ContactPage', 'name' => html_entity_decode(trim($__env->yieldContent('title')), ENT_QUOTES), 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => url()->current(), 'inLanguage' => 'ar', 'isPartOf' => ['@type' => 'WebSite', 'name' => 'أثر', 'url' => route('home')], 'mainEntity' => ['@type' => 'Organization', 'name' => 'أثر', 'url' => route('home'), 'contactPoint' => ['@type' => 'ContactPoint', 'contactType' => 'customer support', 'email' => config('platform.support_email'), 'availableLanguage' => ['ar', 'en']]]]" />
 <section class="page-hero"><div class="narrow"><x-athar.breadcrumbs :items="[['تواصل معنا', null]]" /><span class="kicker">نسمع منك</span><h1>تواصل مع أثر</h1><p>سؤال، اقتراح أو تصحيح؟ اكتب لنا ما تحتاج إليه.</p></div></section>
 <section class="section-tight"><div class="narrow"><div class="card"><x-athar.flash /><form method="post" action="{{ route('contact.store') }}" class="stack">@csrf
 <div class="field"><label for="contact-name">الاسم</label><input id="contact-name" name="name" value="{{ old('name', auth()->user()?->name) }}" maxlength="100" autocomplete="name" required></div>

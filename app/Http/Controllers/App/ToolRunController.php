@@ -4,6 +4,8 @@ namespace App\Http\Controllers\App;
 
 use App\Domain\Commerce\Services\CreditLedger;
 use App\Domain\Insights\Services\EventRecorder;
+use App\Domain\Lab\Ai\AiContext;
+use App\Domain\Lab\Ai\UsageRecorder;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Services\AiGateway;
 use App\Domain\Lab\Services\AssetVault;
@@ -25,7 +27,7 @@ use Throwable;
  */
 class ToolRunController extends Controller
 {
-    public function store(Request $request, Tool $tool, GeneratorEngine $engine, AiGateway $ai, CreditLedger $ledger, AssetVault $vault, ExperimentPicker $experiments, EventRecorder $events): RedirectResponse
+    public function store(Request $request, Tool $tool, GeneratorEngine $engine, AiGateway $ai, CreditLedger $ledger, AssetVault $vault, ExperimentPicker $experiments, EventRecorder $events, UsageRecorder $usage): RedirectResponse
     {
         abort_unless($tool->is_published && $tool->kind === 'generator', 404);
         $data = $request->validate(['project_id' => ['required', 'integer']]);
@@ -37,8 +39,18 @@ class ToolRunController extends Controller
         if ($generated['missing'] !== []) {
             return back()->withErrors(['tool' => 'أكمل الحقول: '.implode('، ', $generated['missing'])])->withInput();
         }
-        $aiEnabled = filled(config('services.openai.key'));
+        $aiEnabled = $ai->enabled();
         $cost = $aiEnabled ? (int) $tool->credit_cost : 0;
+
+        // The monthly AI allowance is checked before any credit is reserved: a run refused for quota
+        // must not leave a reservation behind for the recovery command to unwind.
+        if ($aiEnabled) {
+            try {
+                $usage->assertWithinQuota($workspace);
+            } catch (DomainException $exception) {
+                return back()->withErrors(['tool' => $exception->getMessage()])->withInput();
+            }
+        }
 
         $publicId = (string) Str::uuid();
         try {
@@ -63,7 +75,19 @@ class ToolRunController extends Controller
         $notice = null;
         try {
             if ($aiEnabled) {
-                $answer = $ai->generate("الأصل القاعدي:\n\n".$generated['markdown']."\n\nحسّنه مع إبقاء البنية والجداول والعناوين.", $version?->ai_instructions ?: 'أنت مساعد تسويق عربي دقيق. حسّن صياغة الأصل التالي دون اختراع أرقام أو مصادر، وأبقِ جمهوراً واحداً وقناة واحدة.');
+                $answer = $ai->generate(
+                    "الأصل القاعدي:\n\n".$generated['markdown']."\n\nحسّنه مع إبقاء البنية والجداول والعناوين.",
+                    $version?->ai_instructions ?: 'أنت مساعد تسويق عربي دقيق. حسّن صياغة الأصل التالي دون اختراع أرقام أو مصادر، وأبقِ جمهوراً واحداً وقناة واحدة.',
+                    new AiContext(
+                        workspace: $workspace,
+                        userId: $request->user()->id,
+                        runId: $runId,
+                        purpose: 'tool:'.$tool->slug,
+                        operationKey: "run:{$publicId}:ai",
+                        sensitive: true,
+                        cacheable: false,
+                    ),
+                );
                 $markdown = trim($answer['text']) !== '' ? trim($answer['text']) : $markdown;
                 $enhanced = true;
                 if ($cost > 0) {

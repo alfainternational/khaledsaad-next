@@ -2,6 +2,8 @@
 @section('title', 'المختبر التسويقي — أثر')
 @section('description', 'عشرة مولدات تعمل بقوالب بلا ذكاء اصطناعي، أربع حاسبات ومحاكي حملة إعلانية: من السؤال إلى أصل قابل للاستخدام يُحفظ في مشروعك.')
 @section('content')
+@php($labItems = collect($generators)->map(fn ($t) => [$t->name, route('tools.show', $t)])->concat(collect($calculators)->map(fn ($t) => [$t->name, route('tools.calculator', $t->slug)]))->when($simulator ?? null, fn ($c) => $c->push([$simulator->name, route('tools.simulator')]))->values())
+<x-athar.schema :data="['@type' => 'CollectionPage', 'name' => 'المختبر التسويقي', 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => route('tools.index'), 'inLanguage' => 'ar', 'mainEntity' => ['@type' => 'ItemList', 'numberOfItems' => $labItems->count(), 'itemListElement' => $labItems->map(fn ($i, $k) => ['@type' => 'ListItem', 'position' => $k + 1, 'name' => $i[0], 'url' => $i[1]])->all()]]" />
 <section class="page-hero tools-hero"><div class="shell">
     <x-athar.breadcrumbs :items="[['المختبر', null]]" />
     <span class="kicker">مختبر التسويق</span>
