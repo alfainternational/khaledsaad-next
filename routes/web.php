@@ -16,10 +16,12 @@ use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\App\BillingController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\LessonCompletionController;
+use App\Http\Controllers\App\MarketPanelController;
 use App\Http\Controllers\App\OutputController;
 use App\Http\Controllers\App\ProjectController;
-use App\Http\Controllers\App\MarketPanelController;
 use App\Http\Controllers\App\ToolRunController;
+use App\Http\Controllers\App\VisualStudioController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\Site\AcademyController;
@@ -87,9 +89,12 @@ Route::get('/tools', [LabController::class, 'index'])->name('tools.index');
 Route::get('/tools/calculators/{calc}', [LabController::class, 'calculator'])->name('tools.calculator');
 Route::get('/tools/simulator', [LabController::class, 'simulator'])->name('tools.simulator');
 Route::get('/tools/panel', [LabController::class, 'panel'])->name('tools.panel');
+Route::get('/tools/studio', [LabController::class, 'studio'])->name('tools.studio');
 Route::get('/tools/{tool}', [LabController::class, 'show'])->name('tools.show');
 Route::post('/tools/{tool}/generate', [LabController::class, 'generate'])->middleware('throttle:events')->name('tools.generate');
 Route::get('/a/{token}', [LabController::class, 'shared'])->name('assets.shared');
+// الملف المخزّن: الصف نفسه يقرّر من يقرأه — عضو في مساحة العمل، أو أي أحد إن كان أصله مشاركاً برابط.
+Route::get('/media/{media}', [MediaController::class, 'show'])->name('media.show');
 Route::get('/resources', [ResourceController::class, 'index'])->name('resources');
 Route::view('/about', 'site.about')->name('about');
 Route::get('/pricing', [PageController::class, 'pricing'])->name('pricing');
@@ -142,6 +147,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/app/projects/{project}/plan', [ProjectController::class, 'plan'])->name('app.projects.plan');
     Route::post('/app/tools/{tool}/run', [ToolRunController::class, 'store'])->middleware('throttle:ai')->name('app.tools.run');
     Route::post('/app/tools/{tool}/panel', [MarketPanelController::class, 'store'])->middleware('throttle:ai')->name('app.tools.panel');
+    Route::post('/app/tools/{tool}/studio', [VisualStudioController::class, 'store'])->middleware('throttle:ai')->name('app.tools.studio');
     Route::post('/app/tools/{tool}/save', [OutputController::class, 'store'])->name('app.tools.save');
     // أصولي (§5.3) والمشاركة برابط (§4.7)
     Route::get('/app/outputs', [OutputController::class, 'index'])->name('app.outputs.index');

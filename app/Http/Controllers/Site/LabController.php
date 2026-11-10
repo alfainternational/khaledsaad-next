@@ -16,6 +16,7 @@ use App\Domain\Lab\Services\GeneratorEngine;
 use App\Domain\Lab\Services\LabCatalog;
 use App\Domain\Lab\Services\SyntheticMarket;
 use App\Domain\Lab\Services\TextDiff;
+use App\Domain\Lab\Services\VisualStudio;
 use App\Domain\Workspace\Models\Project;
 use App\Http\Controllers\Controller;
 use App\Support\Viewer;
@@ -43,6 +44,7 @@ class LabController extends Controller
         return view('site.tools.index', [
             'generators' => $tools->where('kind', 'generator')->values(), 'calculators' => $tools->where('kind', 'calculator')->values(),
             'simulator' => $tools->firstWhere('kind', 'simulator'), 'panel' => $tools->firstWhere('kind', 'panel'),
+            'studio' => $tools->firstWhere('kind', 'studio'),
             'categories' => Tool::CATEGORIES, 'category' => in_array($category, Tool::CATEGORIES, true) ? $category : '',
         ]);
     }
@@ -58,6 +60,9 @@ class LabController extends Controller
         }
         if ($tool->isPanel()) {
             return redirect()->route('tools.panel');
+        }
+        if ($tool->isStudio()) {
+            return redirect()->route('tools.studio');
         }
         $user = $this->member($request);
         $projects = $user ? $this->projects($request) : collect();
@@ -190,6 +195,37 @@ class LabController extends Controller
             'tool' => $tool, 'fields' => $fields, 'result' => $result, 'member' => (bool) $user, 'projects' => $projects, 'project' => $project,
             'chain' => $this->chain->chain($tool, $project, $assets), 'caps' => SyntheticMarket::caps(), 'verdicts' => SyntheticMarket::VERDICTS,
             'aiEnabled' => app(AiGateway::class)->enabled(),
+            'saved' => $user && $project ? ToolOutput::query()->where('project_id', $project->id)->where('output_type', $tool->output_type)->orderByDesc('version')->get() : collect(),
+        ]);
+    }
+
+    /**
+     * استوديو الأصول البصرية — /tools/studio (plan 2026-11-09 البند 4). Public page, member-only run: it works on an
+     * image the member uploads into their own project. Free, because nothing here calls a model.
+     */
+    public function studio(Request $request)
+    {
+        $tool = Tool::query()->where('kind', 'studio')->where('is_published', true)->firstOrFail();
+        $user = $this->member($request);
+        $projects = $user ? $this->projects($request) : collect();
+        $project = $this->currentProject($request, $projects);
+        $assets = $this->chain->assets($project, $user ? [] : (array) session('lab.assets', []));
+        $prefill = $this->chain->prefill($tool, $project, $assets);
+        $result = session('lab.studio.'.$tool->slug);
+        $studio = app(VisualStudio::class);
+
+        $fields = [];
+        foreach ($tool->fields() as $field) {
+            $key = $field['key'];
+            $value = $result['input'][$key] ?? ($result[$key] ?? ($prefill[$key]['value'] ?? ($field['default'] ?? '')));
+            $fields[] = $field + ['value' => $value, 'prefilled' => isset($prefill[$key]), 'source_label' => $prefill[$key]['label'] ?? null, 'options_map' => LabCatalog::options($field)];
+        }
+        $this->events->record($request, 'visit.tool', ['tool_id' => $tool->id]);
+
+        return view('site.tools.studio', [
+            'tool' => $tool, 'fields' => $fields, 'result' => $result, 'member' => (bool) $user, 'projects' => $projects, 'project' => $project,
+            'chain' => $this->chain->chain($tool, $project, $assets),
+            'templates' => $studio->templates(), 'limits' => (array) config('studio.limits'), 'fontAvailable' => $studio->fontAvailable(),
             'saved' => $user && $project ? ToolOutput::query()->where('project_id', $project->id)->where('output_type', $tool->output_type)->orderByDesc('version')->get() : collect(),
         ]);
     }

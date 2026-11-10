@@ -253,6 +253,7 @@ class Markdown
             'calculator' => route('tools.calculator', $tool->slug),
             'simulator' => route('tools.simulator'),
             'panel' => route('tools.panel'),
+            'studio' => route('tools.studio'),
             default => route('tools.show', $tool),
         };
     }

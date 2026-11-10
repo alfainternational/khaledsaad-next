@@ -380,16 +380,16 @@ class MarketPanelTest extends TestCase
 
     public function test_the_additive_seeder_creates_the_panel_once_and_never_overwrites_a_tuned_template(): void
     {
-        // Production carries .seeded-stage2, so this tool arrives through its own seeder — which must be safe to rerun.
+        // Production carries .seeded-stage2, so this tool arrives through the additive seeder — safe to rerun.
         $this->tool->update(['output_template' => '# قالب حرّره محرر في الاستوديو']);
-        $this->seed(\Database\Seeders\MarketPanelSeeder::class);
+        $this->seed(\Database\Seeders\AdditiveToolsSeeder::class);
 
         $this->assertSame(1, Tool::query()->where('slug', 'market-panel')->count());
         $this->assertSame('# قالب حرّره محرر في الاستوديو', (string) $this->tool->fresh()->output_template);
 
         $this->tool->versions()->delete();
         $this->tool->delete();
-        $this->seed(\Database\Seeders\MarketPanelSeeder::class);
+        $this->seed(\Database\Seeders\AdditiveToolsSeeder::class);
 
         $created = Tool::query()->where('slug', 'market-panel')->firstOrFail();
         $this->assertTrue($created->is_published);

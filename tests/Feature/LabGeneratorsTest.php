@@ -20,7 +20,7 @@ class LabGeneratorsTest extends TestCase
         Http::fake();
     }
 
-    public function test_lab_index_lists_sixteen_working_tools_with_filters_and_no_coming_soon(): void
+    public function test_lab_index_lists_seventeen_working_tools_with_filters_and_no_coming_soon(): void
     {
         $page = $this->get('/tools')->assertOk()->assertSee('من السؤال إلى أصل قابل للاستخدام')->assertDontSee('قريباً');
         foreach (['الكل', 'التخطيط', 'الجمهور', 'المحتوى', 'الإعلانات', 'القياس', 'الذكاء الاصطناعي'] as $filter) {
@@ -35,7 +35,9 @@ class LabGeneratorsTest extends TestCase
         $page->assertSee(route('tools.simulator'), false)->assertSee('بلا ذكاء اصطناعي يعمل بالقوالب')->assertSee('الرصيد: <b>0</b> بلا AI', false);
         // The panel is the one tool with no free base path (it is model voices or nothing), so it says so on the card.
         $page->assertSee(route('tools.panel'), false)->assertSee('بحساب ورصيد');
-        $this->assertSame(16, Tool::query()->where('is_published', true)->count());
+        // The studio is the opposite: it calls no model at all, so it costs nothing.
+        $page->assertSee(route('tools.studio'), false)->assertSee('بلا توليد وبلا رصيد');
+        $this->assertSame(17, Tool::query()->where('is_published', true)->count());
         $this->assertSame(10, Tool::query()->where('kind', 'generator')->where('is_published', true)->count());
     }
 

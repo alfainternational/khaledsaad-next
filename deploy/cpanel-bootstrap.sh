@@ -108,11 +108,11 @@ if [ ! -f storage/app/.seeded-stage4-completion ]; then
     echo "==> Importing stage-4 completion rules (once)"
     "$PHP" artisan db:seed --class=StageFourCompletionSeeder --force --no-interaction && touch storage/app/.seeded-stage4-completion
 fi
-# Additive release: one new lab tool (لوحة السوق المحاكى). Never reruns LabSeeder, which would overwrite templates
-# the studio owns, and never touches a market-panel row that already exists.
-if [ ! -f storage/app/.seeded-market-panel-20261110 ]; then
-    echo "==> Adding the simulated-market panel tool (once)"
-    "$PHP" artisan db:seed --class=MarketPanelSeeder --force --no-interaction && touch storage/app/.seeded-market-panel-20261110
+# Additive release: lab tools added after stage 2 (لوحة السوق المحاكى، استوديو الأصول البصرية). Never reruns
+# LabSeeder, which would overwrite templates the studio owns, and never touches a tool row that already exists.
+if [ ! -f storage/app/.seeded-lab-additions-20261110 ]; then
+    echo "==> Adding lab tools released after stage 2 (once)"
+    "$PHP" artisan db:seed --class=AdditiveToolsSeeder --force --no-interaction && touch storage/app/.seeded-lab-additions-20261110
 fi
 # Separate conflict-aware release: never rerun the broad magazine seeder to update editor-owned text.
 if [ ! -f storage/app/.seeded-editorial-reading-20261030 ]; then

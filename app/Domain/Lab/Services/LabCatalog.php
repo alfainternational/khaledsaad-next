@@ -58,7 +58,7 @@ class LabCatalog
     }
 
     /** Assets a tool produces outside the ten-asset plan chain (they add to the project, they do not complete the plan). */
-    public const SIDE_ASSETS = ['market_panel' => 'لوحة السوق المحاكى'];
+    public const SIDE_ASSETS = ['market_panel' => 'لوحة السوق المحاكى', 'visual_assets' => 'أصول بصرية'];
 
     public static function label(string $type): string
     {
@@ -77,7 +77,8 @@ class LabCatalog
             $tools[] = $def + ['slug' => $slug, 'kind' => 'calculator', 'position' => $position++, 'is_published' => true, 'credit_cost' => 0, 'output_type' => null, 'feeds_from' => [], 'feeds_into' => [], 'quality_rules' => [], 'output_template' => null];
         }
         $tools[] = self::simulator() + ['slug' => 'ad-campaign-simulator', 'kind' => 'simulator', 'position' => $position++, 'is_published' => true, 'credit_cost' => 0, 'output_type' => null, 'feeds_from' => [], 'feeds_into' => [], 'quality_rules' => [], 'output_template' => null];
-        $tools[] = self::panel() + ['slug' => 'market-panel', 'kind' => 'panel', 'position' => $position, 'is_published' => true];
+        $tools[] = self::panel() + ['slug' => 'market-panel', 'kind' => 'panel', 'position' => $position++, 'is_published' => true];
+        $tools[] = self::studio() + ['slug' => 'visual-studio', 'kind' => 'studio', 'position' => $position, 'is_published' => true];
 
         return $tools;
     }
@@ -582,6 +583,41 @@ MD,
 - **تحقّق من أقوى اعتراضين مع ثلاثة عملاء حقيقيين** قبل أي قرار إنفاق. المحاكاة تختصر الصياغة، لا البحث.
 
 _بذرة التشغيل: {{seed}} · المزوّد: {{provider}} · الموديل: {{model}} · مختبر أثر — {{date}}_
+MD,
+        ];
+    }
+
+    /**
+     * استوديو الأصول البصرية (plan 2026-11-09 البند 4): the one tool that takes a file in and gives files back.
+     * It composes and never generates, so it costs nothing — `credit_cost` is 0 and that is the point, not an oversight.
+     */
+    public static function studio(): array
+    {
+        return [
+            'name' => 'استوديو الأصول البصرية', 'category' => 'المحتوى', 'credit_cost' => 0, 'output_type' => 'visual_assets', 'course_slug' => 'social-media',
+            'description' => 'صورتك أنت تخرج بمقاسات كل منصة، وعليها عنوانك وشعارك: قصّ دقيق بلا تشويه، وعنوان عربي مكتوب على شريط مقروء، وشعار في زاويته.',
+            'tagline' => 'تُدخل: صورة منتجك وعنواناً وشعارك → تخرج: أصول جاهزة للنشر بمقاسات المنصات',
+            'feeds_from' => ['profile', 'headlines_cta', 'value_proposition'], 'feeds_into' => ['content_calendar'],
+            'quality_rules' => [],
+            'input_schema' => [
+                self::f('headline', 'العنوان على الصورة', ['type' => 'textarea', 'required' => false, 'from_asset' => ['type' => 'headlines_cta', 'key' => 'headline'], 'hint' => 'اتركه فارغاً لإخراج المقاسات بلا كتابة. الحد 90 حرفاً.', 'placeholder' => 'مثال: بشرة هادئة بلا تهيّج خلال 7 أيام']),
+            ],
+            'example_input' => ['headline' => 'بشرة هادئة بلا تهيّج خلال 7 أيام'],
+            'output_template' => <<<'MD'
+# أصول بصرية — {{headline_or_project}}
+
+أصول مُركَّبة من صورتك أنت بتاريخ {{date}}. **لا توليد بالذكاء الاصطناعي في هذه المخرجات**: القصّ والكتابة والشعار عمليات حتمية على ملفك، فالنتيجة ملكك بالكامل ولا رصيد عليها.
+
+| المقاس | الأبعاد | الملف |
+|---|---|---|
+{{assets_table}}
+
+## قبل النشر
+- **افحص القصّ في كل مقاس.** القصّ يملأ الإطار من المنتصف؛ إن كان المنتج في طرف الصورة فأعد رفع صورة أوسع.
+- **العنوان على شريط مقروء** لا على الصورة مباشرة، لأن التباين فوق صورة مجهولة لا يُضمن.
+- **المقاسات الطولية** تترك مساحة علوية وسفلية لواجهة المنصة نفسها؛ لا تضع فيها نصاً مهماً.
+
+_استوديو أثر — {{date}}_
 MD,
         ];
     }

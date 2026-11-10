@@ -65,3 +65,5 @@ Schedule::command('platform:send-checkin-reminders')->dailyAt('08:00')->withoutO
 Schedule::command('platform:fetch-sources')->dailyAt('05:30')->withoutOverlapping();
 // §6.1 slot 5: a running A/B is adopted automatically once its save-rate difference is statistically significant.
 Schedule::command('platform:evaluate-experiments')->hourly()->withoutOverlapping();
+// البند 2: الملفات التي لا يشير إليها أي أصل محفوظ تُحذف بعد 90 يوماً — الصورة رخيصة الإنتاج وغالية التكديس.
+Schedule::command('platform:prune-media')->dailyAt('03:40')->withoutOverlapping();
