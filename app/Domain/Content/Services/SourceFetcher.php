@@ -4,8 +4,8 @@ namespace App\Domain\Content\Services;
 
 use App\Domain\Content\Models\SourceFeed;
 use App\Domain\Content\Models\SourceItem;
+use App\Support\Web\WebFetcher;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -16,6 +16,8 @@ use Throwable;
  */
 class SourceFetcher
 {
+    public function __construct(private readonly WebFetcher $web) {}
+
     public const TIMEOUT_SECONDS = 8;
 
     public const MAX_ITEMS_PER_FEED = 15;
@@ -58,12 +60,13 @@ class SourceFetcher
     {
         $result = ['fetched' => 0, 'created' => 0, 'skipped' => 0, 'failed' => 0, 'error' => null];
         try {
-            $response = Http::timeout(self::TIMEOUT_SECONDS)->connectTimeout(4)->withHeaders(['User-Agent' => 'AtharSourceBot/1.0 (+https://next.khaledsaad.net)'])
-                ->retry(1, 200, throw: false)->get($feed->url);
-            if (! $response->successful()) {
-                throw new \RuntimeException('HTTP '.$response->status());
+            // Through the shared fetcher (spec 2026-11-09, wave 0 item 3): the URL guard and the per-host rate
+            // window apply to an editor's feed too, because a pasted internal address is exactly the mistake to catch.
+            $page = $this->web->feed($feed->url);
+            if (! $page->ok()) {
+                throw new \RuntimeException($page->status > 0 ? 'HTTP '.$page->status : 'unreachable');
             }
-            $entries = $this->parse($response->body());
+            $entries = $this->parse($page->body);
         } catch (Throwable $e) {
             $feed->forceFill(['last_fetched_at' => now(), 'last_error' => Str::limit($e->getMessage(), 180, '')])->save();
             $result['failed'] = 1;

@@ -11,6 +11,7 @@ use App\Domain\Content\Models\SourceItem;
 use App\Domain\Content\Models\Tag;
 use App\Domain\Content\Services\SourceFetcher;
 use App\Domain\Lab\Models\Tool;
+use App\Support\Web\UrlGuard;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -144,6 +145,8 @@ class AdminMagazineTest extends TestCase
         $ok = SourceFeed::query()->create(['name' => 'Feed RSS', 'url' => 'https://rss.test/feed', 'is_active' => true]);
         $atomFeed = SourceFeed::query()->create(['name' => 'Feed Atom', 'url' => 'https://atom.test/feed', 'is_active' => true]);
         $down = SourceFeed::query()->create(['name' => 'Feed Down', 'url' => 'https://down.test/feed', 'is_active' => true]);
+        // The capture gate now runs through the shared fetcher, so the test declares what its hosts resolve to.
+        UrlGuard::resolveUsing(fn () => ['93.184.216.34']);
         Http::fake([
             'rss.test/*' => Http::response($rss, 200),
             'atom.test/*' => Http::response($atom, 200),
