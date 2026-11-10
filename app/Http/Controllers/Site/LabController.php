@@ -7,12 +7,14 @@ use App\Domain\Content\Models\ContentItem;
 use App\Domain\Insights\Services\EventRecorder;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Models\ToolOutput;
+use App\Domain\Lab\Services\AiGateway;
 use App\Domain\Lab\Services\Calculators;
 use App\Domain\Lab\Services\CampaignSimulator;
 use App\Domain\Lab\Services\ChainResolver;
 use App\Domain\Lab\Services\ExperimentPicker;
 use App\Domain\Lab\Services\GeneratorEngine;
 use App\Domain\Lab\Services\LabCatalog;
+use App\Domain\Lab\Services\SyntheticMarket;
 use App\Domain\Lab\Services\TextDiff;
 use App\Domain\Workspace\Models\Project;
 use App\Http\Controllers\Controller;
@@ -39,7 +41,8 @@ class LabController extends Controller
         $category = (string) $request->query('cat', '');
 
         return view('site.tools.index', [
-            'generators' => $tools->where('kind', 'generator')->values(), 'calculators' => $tools->where('kind', 'calculator')->values(), 'simulator' => $tools->firstWhere('kind', 'simulator'),
+            'generators' => $tools->where('kind', 'generator')->values(), 'calculators' => $tools->where('kind', 'calculator')->values(),
+            'simulator' => $tools->firstWhere('kind', 'simulator'), 'panel' => $tools->firstWhere('kind', 'panel'),
             'categories' => Tool::CATEGORIES, 'category' => in_array($category, Tool::CATEGORIES, true) ? $category : '',
         ]);
     }
@@ -52,6 +55,9 @@ class LabController extends Controller
         }
         if ($tool->kind === 'simulator') {
             return redirect()->route('tools.simulator');
+        }
+        if ($tool->isPanel()) {
+            return redirect()->route('tools.panel');
         }
         $user = $this->member($request);
         $projects = $user ? $this->projects($request) : collect();
@@ -148,6 +154,44 @@ class LabController extends Controller
         }
 
         return view('site.tools.simulator', ['tool' => $tool, 'input' => $input, 'result' => CampaignSimulator::simulate($input), 'benchmarks' => CampaignSimulator::BENCHMARKS]);
+    }
+
+    /**
+     * لوحة السوق المحاكى — /tools/panel (plan 2026-11-09 البند 3). The page is public so the method and its limits can be
+     * read before signing up, but the run itself needs an account, a project and credits: there is no base output
+     * without a model, and the page says so instead of pretending a free path exists.
+     */
+    public function panel(Request $request)
+    {
+        $tool = Tool::query()->where('kind', 'panel')->where('is_published', true)->firstOrFail();
+        $user = $this->member($request);
+        $projects = $user ? $this->projects($request) : collect();
+        $project = $this->currentProject($request, $projects);
+        $assets = $this->chain->assets($project, $user ? [] : (array) session('lab.assets', []));
+        $prefill = $this->chain->prefill($tool, $project, $assets);
+        $result = session('lab.panel.'.$tool->slug);
+        $input = $result['input'] ?? [];
+        if ($request->query('example') === '1') {
+            $input = $tool->example_input ?? [];
+            $result = null;
+        } elseif ($request->query('fresh') === '1') {
+            $input = [];
+            $result = null;
+        }
+        $fields = [];
+        foreach ($tool->fields() as $field) {
+            $key = $field['key'];
+            $value = $input[$key] ?? ($prefill[$key]['value'] ?? ($field['default'] ?? ''));
+            $fields[] = $field + ['value' => $value, 'prefilled' => ! isset($input[$key]) && isset($prefill[$key]), 'source_label' => $prefill[$key]['label'] ?? null, 'options_map' => LabCatalog::options($field)];
+        }
+        $this->events->record($request, 'visit.tool', ['tool_id' => $tool->id]);
+
+        return view('site.tools.panel', [
+            'tool' => $tool, 'fields' => $fields, 'result' => $result, 'member' => (bool) $user, 'projects' => $projects, 'project' => $project,
+            'chain' => $this->chain->chain($tool, $project, $assets), 'caps' => SyntheticMarket::caps(), 'verdicts' => SyntheticMarket::VERDICTS,
+            'aiEnabled' => app(AiGateway::class)->enabled(),
+            'saved' => $user && $project ? ToolOutput::query()->where('project_id', $project->id)->where('output_type', $tool->output_type)->orderByDesc('version')->get() : collect(),
+        ]);
     }
 
     /** Public read-only page of a shared asset (no account, noindex). 404 once the owner revokes the link. */

@@ -252,6 +252,7 @@ class Markdown
         return match ($tool->kind) {
             'calculator' => route('tools.calculator', $tool->slug),
             'simulator' => route('tools.simulator'),
+            'panel' => route('tools.panel'),
             default => route('tools.show', $tool),
         };
     }

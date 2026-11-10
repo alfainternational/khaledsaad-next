@@ -55,6 +55,19 @@ return [
         'ttl_minutes' => (int) env('AI_CACHE_TTL_MINUTES', 0),
     ],
 
+    /*
+    | السوق المحاكى — the hard ceiling of one panel run, in config and not in the prompt. A panel is the only
+    | feature that calls the model more than once per run (voices × rounds), so its bound is the difference
+    | between a bounded feature and an open loop: 5 × 2 = 10 calls, each capped well under the global token limit.
+    | `cache_ttl_minutes` makes the same panel reproducible for a day — what an audit and a fair A/B both need.
+    */
+    'panel' => [
+        'max_voices' => (int) env('AI_PANEL_MAX_VOICES', 5),
+        'max_rounds' => (int) env('AI_PANEL_MAX_ROUNDS', 2),
+        'max_output_tokens' => (int) env('AI_PANEL_MAX_OUTPUT_TOKENS', 600),
+        'cache_ttl_minutes' => (int) env('AI_PANEL_CACHE_TTL_MINUTES', 1440),
+    ],
+
     'providers' => [
 
         'gemini' => [

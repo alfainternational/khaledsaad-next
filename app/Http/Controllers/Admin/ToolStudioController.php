@@ -66,7 +66,7 @@ class ToolStudioController extends Controller
             'feeds_from' => ['nullable', 'array'], 'feeds_from.*' => ['string', 'max:60'], 'feeds_into' => ['nullable', 'array'], 'feeds_into.*' => ['string', 'max:60'],
         ]);
         $schema = $tool->input_schema;
-        if ($tool->kind === 'generator' && filled($data['input_schema'] ?? null)) {
+        if ($tool->usesTemplate() && filled($data['input_schema'] ?? null)) {
             $decoded = json_decode($data['input_schema'], true);
             if (! is_array($decoded) || array_filter($decoded, fn ($f) => ! is_array($f) || empty($f['key']) || empty($f['label'])) !== []) {
                 return back()->withErrors(['input_schema' => 'مخطط الحقول يجب أن يكون JSON لقائمة حقول، كل حقل بـ key وlabel.'])->withInput();
@@ -77,7 +77,8 @@ class ToolStudioController extends Controller
         $tool->update([
             'name' => $data['name'], 'description' => $data['description'], 'tagline' => $data['tagline'] ?? null, 'category' => $data['category'], 'credit_cost' => $data['credit_cost'],
             'is_published' => (bool) ($data['is_published'] ?? false), 'input_schema' => $schema,
-            'output_template' => $tool->kind === 'generator' ? ($data['output_template'] ?? $tool->output_template) : null,
+            // A panel fills a template too, so this must never blank it — only kinds that compute in code have none.
+            'output_template' => $tool->usesTemplate() ? ($data['output_template'] ?? $tool->output_template) : null,
             'quality_rules' => $tool->kind === 'generator' ? ['required' => array_values($data['required_rules'] ?? []), 'advisory' => array_values(array_diff($data['advisory_rules'] ?? [], $data['required_rules'] ?? []))] : [],
             'feeds_from' => array_values($data['feeds_from'] ?? []), 'feeds_into' => array_values($data['feeds_into'] ?? []),
         ]);
@@ -90,11 +91,11 @@ class ToolStudioController extends Controller
     public function storeVersion(Request $request, Tool $tool)
     {
         $this->authorizeEditor($request);
-        abort_unless($tool->kind === 'generator', 404);
+        abort_unless($tool->usesTemplate(), 404);
         $data = $request->validate(['label' => ['required', 'string', 'max:120'], 'output_template' => ['required', 'string', 'max:30000'], 'ai_instructions' => ['nullable', 'string', 'max:2000'], 'activate' => ['nullable', 'boolean']]);
         $version = $tool->versions()->create([
             'version' => ((int) $tool->versions()->max('version')) + 1, 'label' => $data['label'], 'input_schema' => $tool->input_schema, 'output_schema' => ['markdown', 'quality'],
-            'output_template' => $data['output_template'], 'ai_instructions' => $data['ai_instructions'] ?? null, 'prompt_key' => 'marketing-ar-v1',
+            'output_template' => $data['output_template'], 'ai_instructions' => $data['ai_instructions'] ?? null, 'prompt_key' => $tool->isPanel() ? 'panel-voice-ar-v1' : 'marketing-ar-v1',
             'config_hash' => hash('sha256', json_encode([$tool->input_schema, $data['output_template']], JSON_UNESCAPED_UNICODE)), 'is_active' => false, 'created_by' => $request->user()->id,
         ]);
         if ($data['activate'] ?? false) {

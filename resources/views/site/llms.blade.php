@@ -18,7 +18,7 @@
 
 ## أدوات المختبر
 @foreach($tools as $tool)
-- [{!! $tool->name !!}]({!! $tool->kind === 'calculator' ? route('tools.calculator', $tool->slug) : ($tool->kind === 'simulator' ? route('tools.simulator') : route('tools.show', $tool)) !!}): {!! \Illuminate\Support\Str::limit(strip_tags((string) $tool->description), 140) !!}
+- [{!! $tool->name !!}]({!! \App\Support\Markdown::toolUrl($tool) !!}): {!! \Illuminate\Support\Str::limit(strip_tags((string) $tool->description), 140) !!}
 @endforeach
 
 ## المجلة

@@ -6,14 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * المختبر = tools (blueprint terminology). kind ∈ generator | calculator | simulator.
+ * المختبر = tools (blueprint terminology). kind ∈ generator | calculator | simulator | panel.
  * credit_cost is the price of the optional AI enhancement; the base generation is always free (0 بلا AI).
+ * A panel has no free base output — it is model voices or nothing — and its credit_cost is per voice-round, not per run.
  */
 class Tool extends Model
 {
     protected $guarded = [];
 
-    public const KINDS = ['generator' => 'مولّد', 'calculator' => 'حاسبة', 'simulator' => 'محاكي'];
+    public const KINDS = ['generator' => 'مولّد', 'calculator' => 'حاسبة', 'simulator' => 'محاكي', 'panel' => 'لوحة'];
 
     public const CATEGORIES = ['التخطيط', 'الجمهور', 'المحتوى', 'الإعلانات', 'القياس', 'الذكاء الاصطناعي'];
 
@@ -48,6 +49,21 @@ class Tool extends Model
     public function isGenerator(): bool
     {
         return $this->kind === 'generator';
+    }
+
+    public function isPanel(): bool
+    {
+        return $this->kind === 'panel';
+    }
+
+    /**
+     * Whether this kind renders its output through a stored Markdown template with versions. Calculators and the
+     * simulator compute their output in code; a generator and a panel both fill a template, so the tool studio
+     * must edit theirs — and must never blank it.
+     */
+    public function usesTemplate(): bool
+    {
+        return in_array($this->kind, ['generator', 'panel'], true);
     }
 
     /** The field definitions (key, label, type, source, from_asset…) the form and the engine read. */

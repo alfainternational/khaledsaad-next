@@ -86,7 +86,7 @@ if [ ! -f storage/app/.seeded-stage1 ]; then
     echo "==> Importing stage-1 content (once)"
     "$PHP" artisan db:seed --class=AcademySeeder --force --no-interaction         && "$PHP" artisan db:seed --class=AssessmentSeeder --force --no-interaction         && touch storage/app/.seeded-stage1
 fi
-# Stage-2 lab content (15 tools with templates, chain and three illustrative examples each) is imported once;
+# Stage-2 lab content (the original 15 tools with templates, chain and three illustrative examples each) is imported once;
 # the studio owns later template changes as versions, so LabSeeder never runs again automatically.
 if [ ! -f storage/app/.seeded-stage2 ]; then
     echo "==> Importing stage-2 lab content (once)"
@@ -107,6 +107,12 @@ fi
 if [ ! -f storage/app/.seeded-stage4-completion ]; then
     echo "==> Importing stage-4 completion rules (once)"
     "$PHP" artisan db:seed --class=StageFourCompletionSeeder --force --no-interaction && touch storage/app/.seeded-stage4-completion
+fi
+# Additive release: one new lab tool (لوحة السوق المحاكى). Never reruns LabSeeder, which would overwrite templates
+# the studio owns, and never touches a market-panel row that already exists.
+if [ ! -f storage/app/.seeded-market-panel-20261110 ]; then
+    echo "==> Adding the simulated-market panel tool (once)"
+    "$PHP" artisan db:seed --class=MarketPanelSeeder --force --no-interaction && touch storage/app/.seeded-market-panel-20261110
 fi
 # Separate conflict-aware release: never rerun the broad magazine seeder to update editor-owned text.
 if [ ! -f storage/app/.seeded-editorial-reading-20261030 ]; then

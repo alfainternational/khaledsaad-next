@@ -19,17 +19,19 @@
             <div class="field"><label for="tagline">ماذا تُدخل وماذا تخرج</label><input id="tagline" name="tagline" maxlength="300" value="{{ old('tagline', $tool->tagline) }}"></div>
             <div class="grid grid-2">
                 <div class="field"><label for="category">الفئة</label><select id="category" name="category">@foreach($categories as $c)<option value="{{ $c }}" @selected($tool->category === $c)>{{ $c }}</option>@endforeach</select></div>
-                <div class="field"><label for="credit_cost">رصيد «حسّن بالذكاء الاصطناعي»</label><input id="credit_cost" name="credit_cost" type="number" min="0" max="50" value="{{ old('credit_cost', $tool->credit_cost) }}"></div>
+                <div class="field"><label for="credit_cost">{{ $tool->isPanel() ? 'رصيد كل صوت في كل جولة' : 'رصيد «حسّن بالذكاء الاصطناعي»' }}</label><input id="credit_cost" name="credit_cost" type="number" min="0" max="50" value="{{ old('credit_cost', $tool->credit_cost) }}">@if($tool->isPanel())<span class="hint">كلفة التشغيل = هذا الرقم × الأصوات × الجولات. السقف في <code>config/ai.php</code> (<code>ai.panel</code>).</span>@endif</div>
             </div>
             <label class="row small"><input type="checkbox" name="is_published" value="1" @checked($tool->is_published)> منشورة في المختبر</label>
-            @if($tool->kind === 'generator')
+            @if($tool->usesTemplate())
             <div class="grid grid-2">
                 <fieldset class="field"><legend class="small" style="font-weight:700">يُغذّى من</legend>@foreach($chainTypes as $k => $l)<label class="small row"><input type="checkbox" name="feeds_from[]" value="{{ $k }}" @checked(in_array($k, $tool->feeds_from ?? [], true))> {{ $l }}</label>@endforeach</fieldset>
                 <fieldset class="field"><legend class="small" style="font-weight:700">يغذّي</legend>@foreach($chainTypes as $k => $l)@if($k !== 'profile')<label class="small row"><input type="checkbox" name="feeds_into[]" value="{{ $k }}" @checked(in_array($k, $tool->feeds_into ?? [], true))> {{ $l }}</label>@endif @endforeach</fieldset>
             </div>
+            @if($tool->kind === 'generator')
             <fieldset class="field"><legend class="small" style="font-weight:700">قواعد فحص قابلية التنفيذ (الستة تظهر دائماً؛ المطلوبة تحكم النتيجة)</legend>
                 <x-athar.table caption="قواعد الجودة"><thead><tr><th>البند</th><th>مطلوب</th><th>استرشادي</th></tr></thead><tbody>@foreach($checks as $k => $l)<tr><td>{{ $l }}</td><td><input type="checkbox" name="required_rules[]" value="{{ $k }}" @checked(in_array($k, $tool->quality_rules['required'] ?? [], true)) aria-label="مطلوب: {{ $l }}"></td><td><input type="checkbox" name="advisory_rules[]" value="{{ $k }}" @checked(in_array($k, $tool->quality_rules['advisory'] ?? [], true)) aria-label="استرشادي: {{ $l }}"></td></tr>@endforeach</tbody></x-athar.table>
             </fieldset>
+            @endif
             <div class="field"><label for="input_schema">مخطط الحقول (JSON: key, label, type, options, source, from_asset, required…)</label><textarea id="input_schema" name="input_schema" class="mono" rows="10">{{ old('input_schema', json_encode($tool->input_schema, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) }}</textarea></div>
             <div class="field"><label for="output_template">قالب المخرج (Markdown؛ المفاتيح بين قوسَين مزدوجَين) — القالب الحي للإصدار الفعّال</label><textarea id="output_template" name="output_template" class="mono" rows="14">{{ old('output_template', $tool->output_template) }}</textarea></div>
             @else
@@ -39,8 +41,8 @@
         </form>
 
         <div class="stack" style="gap:24px">
-            @if($tool->kind === 'generator')
-            <div class="card" id="versions"><x-athar.kicker>إصدارات قالب التوليد</x-athar.kicker>
+            @if($tool->usesTemplate())
+            <div class="card" id="versions"><x-athar.kicker>إصدارات قالب التوليد@if($tool->isPanel()) وتعليمات الأصوات@endif</x-athar.kicker>
                 <x-athar.table caption="الإصدارات"><thead><tr><th>الإصدار</th><th>الوصف</th><th>مولَّد</th><th>محفوظ</th><th>معدل الحفظ</th><th>الحالة</th></tr></thead><tbody>
                     @foreach($versions as $v)@php($vr = $versionRates[$v->id] ?? ['generated' => 0, 'saved' => 0, 'rate' => null])
                     <tr data-version="{{ $v->version }}"><td><b>v{{ $v->version }}</b></td><td>{{ $v->label }}<br><span class="muted small">{{ $v->created_at->format('Y/m/d') }}</span></td><td>{{ $vr['generated'] }}</td><td>{{ $vr['saved'] }}</td><td>{{ $vr['rate'] === null ? '—' : $vr['rate'].'٪' }}</td>

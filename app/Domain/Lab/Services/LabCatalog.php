@@ -57,9 +57,12 @@ class LabCatalog
         return self::COURSE_TOOLS[$courseSlug] ?? null;
     }
 
+    /** Assets a tool produces outside the ten-asset plan chain (they add to the project, they do not complete the plan). */
+    public const SIDE_ASSETS = ['market_panel' => 'لوحة السوق المحاكى'];
+
     public static function label(string $type): string
     {
-        return self::CHAIN[$type] ?? self::LESSON_ASSETS[$type] ?? ($type === 'profile' ? 'ملف المشروع' : $type);
+        return self::CHAIN[$type] ?? self::LESSON_ASSETS[$type] ?? self::SIDE_ASSETS[$type] ?? ($type === 'profile' ? 'ملف المشروع' : $type);
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -73,7 +76,8 @@ class LabCatalog
         foreach (self::calculators() as $slug => $def) {
             $tools[] = $def + ['slug' => $slug, 'kind' => 'calculator', 'position' => $position++, 'is_published' => true, 'credit_cost' => 0, 'output_type' => null, 'feeds_from' => [], 'feeds_into' => [], 'quality_rules' => [], 'output_template' => null];
         }
-        $tools[] = self::simulator() + ['slug' => 'ad-campaign-simulator', 'kind' => 'simulator', 'position' => $position, 'is_published' => true, 'credit_cost' => 0, 'output_type' => null, 'feeds_from' => [], 'feeds_into' => [], 'quality_rules' => [], 'output_template' => null];
+        $tools[] = self::simulator() + ['slug' => 'ad-campaign-simulator', 'kind' => 'simulator', 'position' => $position++, 'is_published' => true, 'credit_cost' => 0, 'output_type' => null, 'feeds_from' => [], 'feeds_into' => [], 'quality_rules' => [], 'output_template' => null];
+        $tools[] = self::panel() + ['slug' => 'market-panel', 'kind' => 'panel', 'position' => $position, 'is_published' => true];
 
         return $tools;
     }
@@ -503,6 +507,82 @@ MD,
                 ['key' => 'cvr', 'label' => 'معدل التحويل من النقرة إلى طلب (٪)', 'type' => 'number', 'default' => 3],
             ],
             'example_input' => ['budget' => 3000, 'audience_size' => 150000, 'channel' => 'instagram', 'cvr' => 3],
+        ];
+    }
+
+    /**
+     * السوق المحاكى (plan 2026-11-09 البند 3): the only tool that calls the model once per voice, so its ceiling lives
+     * in config('ai.panel') and its price is per voice-round — `credit_cost` is the unit, not the run.
+     * The personas are pre-filled from the project's existing شخصية العميل asset: no new input ritual.
+     */
+    public static function panel(): array
+    {
+        return [
+            'name' => 'لوحة السوق المحاكى', 'category' => 'الجمهور', 'credit_cost' => 1, 'output_type' => 'market_panel', 'course_slug' => 'audience-and-personas',
+            'description' => 'اعرض رسالتك على لوحة من شخصيات عملاء يلعبها نموذج لغوي: كل شخصية تجيب وحدها بقرار واعتراض وما يقنعها، والنتيجة تُحسب بالعدّ لا بالتلخيص.',
+            'tagline' => 'تُدخل: الرسالة والشخصيات → تخرج: قرار كل صوت واعتراضه، وقاعدة قرار قبل الإنفاق',
+            'feeds_from' => ['profile', 'customer_persona', 'value_proposition'], 'feeds_into' => ['headlines_cta', 'campaign_brief'],
+            'quality_rules' => [],
+            'input_schema' => [
+                self::f('offer', 'ما الذي تبيعه؟', ['source' => 'offer', 'placeholder' => 'مثال: سيروم طبيعي بلا عطور للبشرة الحساسة']),
+                self::f('sector', 'القطاع', ['type' => 'select', 'options' => 'sectors', 'source' => 'sector']),
+                self::f('message', 'الرسالة التي تريد اختبارها (كما ستُنشر حرفياً)', ['type' => 'textarea', 'from_asset' => ['type' => 'value_proposition', 'key' => 'offer'], 'placeholder' => "مثال: بشرة هادئة بلا تهيّج خلال 7 أيام — سيروم بلا عطور مختبَر جلدياً، وضمان استرجاع 14 يوماً."]),
+                self::f('price', 'السعر أو العرض المالي (إن كان في الرسالة)', ['required' => false, 'placeholder' => 'مثال: 189 ريالاً، أو أول شهر مجاناً']),
+                self::f('personas', 'الشخصيات — سطر لكل شخصية', ['type' => 'textarea', 'from_asset' => ['type' => 'customer_persona', 'key' => 'audience'], 'hint' => 'كل سطر شخصية واحدة محددة. الحد الأقصى خمس شخصيات في اللوحة.', 'placeholder' => "نساء 25–40 في الرياض ذوات بشرة حساسة جرّبن منتجات كثيرة\nأم عاملة تشتري بسرعة وتكره قراءة التفاصيل\nمشترٍ حساس للسعر يقارن مع بدائل الصيدلية"]),
+                ['key' => 'rounds', 'label' => 'الجولات', 'type' => 'select', 'required' => true, 'default' => '1', 'options' => [
+                    '1' => 'جولة واحدة — ردّ أولي من كل شخصية',
+                    '2' => 'جولتان — ثم يُعاد السؤال بعد سماع اعتراضات اللوحة',
+                ]],
+            ],
+            'example_input' => [
+                'offer' => 'سيروم طبيعي بلا عطور للبشرة الحساسة', 'sector' => 'beauty',
+                'message' => 'بشرة هادئة بلا تهيّج خلال 7 أيام — سيروم بلا عطور مختبَر جلدياً، وضمان استرجاع 14 يوماً.',
+                'price' => '189 ريالاً', 'rounds' => '1',
+                'personas' => "نساء 25–40 في الرياض ذوات بشرة حساسة جرّبن منتجات كثيرة\nأم عاملة تشتري بسرعة وتكره قراءة التفاصيل\nمشترٍ حساس للسعر يقارن مع بدائل الصيدلية",
+            ],
+            'output_template' => <<<'MD'
+# لوحة السوق المحاكى — {{offer_short}}
+
+> **محاكاة لا بحث سوق.** هذه الأصوات أنتجها نموذج لغوي يلعب أدوار شخصيات وصفتها أنت. ليست عيّنة، ولا بيانات ميدانية، ولا رأي عملاء حقيقيين. قيمتها في كشف الاعتراضات والثغرات في الرسالة قبل الإنفاق — لا في إثبات وجود طلب.
+
+**الرسالة المعروضة:** {{message}}
+
+**اللوحة:** {{voices_count}} شخصيات · {{rounds}} جولة · {{date}}
+
+## النتيجة بالعدّ
+
+| القرار | الأصوات |
+|---|---|
+| سيشتري | {{count_buy}} |
+| مهتم بشرط | {{count_maybe}} |
+| لن يشتري | {{count_no}} |
+| لم يتضح | {{count_unclear}} |
+
+**قاعدة القرار:** {{decision}}
+
+## الأصوات — الجولة الأولى
+
+{{voices_table}}
+
+## الجولة الثانية
+
+{{round_two}}
+
+## الاعتراضات
+
+{{objections}}
+
+## ما يقنعهم
+
+{{unlocks}}
+
+## كيف تُقرأ هذه اللوحة
+- **الاعتراض المتكرر هو المخرج الحقيقي.** عالجه في الرسالة نفسها، ثم أعد اللوحة وقارن الاعتراضات لا النسب.
+- **لا تبنِ توقع طلبات على هذه النسب.** العدد هنا أصوات محاكاة؛ تقدير الطلبات مكانه [محاكي الحملة](/tools/simulator).
+- **تحقّق من أقوى اعتراضين مع ثلاثة عملاء حقيقيين** قبل أي قرار إنفاق. المحاكاة تختصر الصياغة، لا البحث.
+
+_بذرة التشغيل: {{seed}} · المزوّد: {{provider}} · الموديل: {{model}} · مختبر أثر — {{date}}_
+MD,
         ];
     }
 

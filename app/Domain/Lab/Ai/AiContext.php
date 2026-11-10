@@ -22,11 +22,34 @@ class AiContext
         public readonly bool $sensitive = false,
         /** False to force a fresh call even when an identical prompt was answered before. */
         public readonly bool $cacheable = true,
+        /** Tighter output ceiling for this run. It can only lower the configured limit, never raise it. */
+        public readonly ?int $maxOutputTokens = null,
+        /** Cache lifetime for this run in minutes, overriding the platform default (the panel needs reproducibility). */
+        public readonly ?int $cacheMinutes = null,
     ) {}
 
     /** Admin-side or internal run with no workspace to charge or cap. */
     public static function internal(string $purpose): self
     {
         return new self(purpose: $purpose);
+    }
+
+    /**
+     * One call of a multi-call run (a panel voice, a round): same attribution and the same handling rules, with its own
+     * idempotency key — so a retried panel records each voice once instead of collapsing ten calls into one row.
+     */
+    public function forStep(string $step): self
+    {
+        return new self(
+            workspace: $this->workspace,
+            userId: $this->userId,
+            runId: $this->runId,
+            purpose: $this->purpose,
+            operationKey: $this->operationKey === null ? null : $this->operationKey.':'.$step,
+            sensitive: $this->sensitive,
+            cacheable: $this->cacheable,
+            maxOutputTokens: $this->maxOutputTokens,
+            cacheMinutes: $this->cacheMinutes,
+        );
     }
 }

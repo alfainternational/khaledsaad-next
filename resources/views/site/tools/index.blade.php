@@ -2,7 +2,7 @@
 @section('title', 'المختبر التسويقي — أثر')
 @section('description', 'عشرة مولدات تعمل بقوالب بلا ذكاء اصطناعي، أربع حاسبات ومحاكي حملة إعلانية: من السؤال إلى أصل قابل للاستخدام يُحفظ في مشروعك.')
 @section('content')
-@php($labItems = collect($generators)->map(fn ($t) => [$t->name, route('tools.show', $t)])->concat(collect($calculators)->map(fn ($t) => [$t->name, route('tools.calculator', $t->slug)]))->when($simulator ?? null, fn ($c) => $c->push([$simulator->name, route('tools.simulator')]))->values())
+@php($labItems = collect($generators)->map(fn ($t) => [$t->name, route('tools.show', $t)])->concat(collect($calculators)->map(fn ($t) => [$t->name, route('tools.calculator', $t->slug)]))->when($simulator ?? null, fn ($c) => $c->push([$simulator->name, route('tools.simulator')]))->when($panel ?? null, fn ($c) => $c->push([$panel->name, route('tools.panel')]))->values())
 <x-athar.schema :data="['@type' => 'CollectionPage', 'name' => 'المختبر التسويقي', 'description' => html_entity_decode(trim($__env->yieldContent('description')), ENT_QUOTES), 'url' => route('tools.index'), 'inLanguage' => 'ar', 'mainEntity' => ['@type' => 'ItemList', 'numberOfItems' => $labItems->count(), 'itemListElement' => $labItems->map(fn ($i, $k) => ['@type' => 'ListItem', 'position' => $k + 1, 'name' => $i[0], 'url' => $i[1]])->all()]]" />
 <section class="page-hero tools-hero"><div class="shell">
     <x-athar.breadcrumbs :items="[['المختبر', null]]" />
@@ -52,6 +52,18 @@
         <p class="card-desc">{{ $simulator->description }}</p>
         <p class="tool-io small">{{ $simulator->tagline }}</p>
         <div class="card-meta"><span>قواعد ومعايير مُعلنة في الصفحة</span><span>مجاني</span></div>
+    </a>
+</div></section>
+@endif
+
+@if($panel ?? null)
+<section class="section-tight" id="panel"><div class="shell">
+    <a class="card is-link tool-card simulator-card" href="{{ route('tools.panel') }}" data-category="{{ $panel->category }}" @if($category !== '' && $panel->category !== $category) hidden @endif>
+        <span class="card-tag">{{ $panel->category }} · {{ $panel->kindLabel() }}</span>
+        <h2 style="font-size:24px">{{ $panel->name }}</h2>
+        <p class="card-desc">{{ $panel->description }}</p>
+        <p class="tool-io small">{{ $panel->tagline }}</p>
+        <div class="card-meta"><span>محاكاة لا بحث سوق</span><span>بحساب ورصيد</span></div>
     </a>
 </div></section>
 @endif

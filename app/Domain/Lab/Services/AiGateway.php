@@ -44,7 +44,8 @@ class AiGateway
             throw new DomainException('مزود الذكاء الاصطناعي غير مفعّل. لم يتم خصم أي رصيد.');
         }
 
-        $cacheKey = $this->cacheKey($input, $instructions);
+        $cacheTtl = $context->cacheMinutes ?? (int) config('ai.cache.ttl_minutes', 0);
+        $cacheKey = $this->cacheKey($input, $instructions, $cacheTtl);
         if ($cacheKey && $context->cacheable && is_array($hit = Cache::get($cacheKey))) {
             $this->usage->record($context, $hit['provider'], $hit['model'], 0, 0, cached: true);
 
@@ -63,7 +64,11 @@ class AiGateway
             throw new DomainException('كل مزوّدي الذكاء الاصطناعي بلغوا حدّهم الآن. مدخلاتك محفوظة، أعد المحاولة بعد قليل.');
         }
 
+        // A run may ask for less room than the platform allows, never for more: the ceiling stays in config.
         $maxOutputTokens = (int) config('ai.limits.max_output_tokens', 4000);
+        if ($context->maxOutputTokens !== null) {
+            $maxOutputTokens = max(1, min($maxOutputTokens, $context->maxOutputTokens));
+        }
         foreach ($candidates as $provider) {
             try {
                 $this->chain->noteCall($provider);
@@ -91,7 +96,7 @@ class AiGateway
                 'provider' => $provider->name(),
             ];
             if ($cacheKey && $context->cacheable) {
-                Cache::put($cacheKey, $result, now()->addMinutes((int) config('ai.cache.ttl_minutes')));
+                Cache::put($cacheKey, $result, now()->addMinutes($cacheTtl));
             }
 
             return $result + ['cached' => false];
@@ -101,9 +106,9 @@ class AiGateway
     }
 
     /** Null disables caching: the chain signature is part of the key, so switching provider never serves a stale answer. */
-    private function cacheKey(string $input, ?string $instructions): ?string
+    private function cacheKey(string $input, ?string $instructions, int $ttlMinutes): ?string
     {
-        if ((int) config('ai.cache.ttl_minutes', 0) < 1) {
+        if ($ttlMinutes < 1) {
             return null;
         }
 

@@ -48,8 +48,13 @@ class UsageRecorder
         return ['requests' => (int) ($row->requests ?? 0), 'tokens' => (int) ($row->tokens ?? 0)];
     }
 
-    /** @throws DomainException when this workspace has spent its month */
-    public function assertWithinQuota(?Workspace $workspace): void
+    /**
+     * @param  int  $planned  how many calls this run intends to make — a panel asks for its whole size, so a run that
+     *                        cannot fit in what is left of the month is refused whole instead of stopping half-spoken.
+     *
+     * @throws DomainException when this workspace has spent its month
+     */
+    public function assertWithinQuota(?Workspace $workspace, int $planned = 1): void
     {
         if (! $workspace) {
             return;
@@ -61,9 +66,13 @@ class UsageRecorder
             return;
         }
 
+        $planned = max(1, $planned);
         $totals = $this->monthlyTotals($workspace);
-        if ($requestLimit > 0 && $totals['requests'] >= $requestLimit) {
-            throw new DomainException('بلغت مساحة العمل حدّ تشغيلات الذكاء الاصطناعي لهذا الشهر. لم يُخصم أي رصيد، والحد يتجدد مع بداية الشهر.');
+        if ($requestLimit > 0 && $totals['requests'] + $planned > $requestLimit) {
+            // With planned = 1 this is the old «already at the limit» check, unchanged.
+            throw new DomainException($planned > 1
+                ? 'ما بقي من حصة الذكاء الاصطناعي لهذا الشهر لا يكفي تشغيلاً بهذا الحجم. قلّل عدد الشخصيات أو الجولات، أو انتظر تجديد الحد مع بداية الشهر. لم يُخصم أي رصيد.'
+                : 'بلغت مساحة العمل حدّ تشغيلات الذكاء الاصطناعي لهذا الشهر. لم يُخصم أي رصيد، والحد يتجدد مع بداية الشهر.');
         }
         if ($tokenLimit > 0 && $totals['tokens'] >= $tokenLimit) {
             throw new DomainException('بلغت مساحة العمل حدّ المعالجة لهذا الشهر. لم يُخصم أي رصيد، والحد يتجدد مع بداية الشهر.');
