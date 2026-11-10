@@ -145,14 +145,24 @@ class VisualStudio
         $size = (int) max((int) $config['min_font'], min((int) $config['max_font'], (int) round($width / 20)));
         $inset = (int) round($width * 0.06);
         $boxWidth = $width - (2 * $inset);
-        // Arabic advance width averages about half the em; this is what decides where ar-php breaks the lines.
-        $perLine = max(8, (int) floor($boxWidth / ($size * 0.52)));
+        $lineHeight = (float) ($config['line_height'] ?? 1.5);
+        $minimum = (int) $config['min_font'];
+        // A long headline on a landscape size would otherwise eat half the frame: the type shrinks until the band
+        // fits its share of the height, and only then gives up. Width alone is not enough to size text by.
+        $maxBand = (int) round($height * (float) ($config['max_band_ratio'] ?? 0.38));
 
-        $shaped = $this->shape($headline, $perLine);
-        $lines = substr_count($shaped, "\n") + 1;
-        $lineHeight = 1.35;
-        $padding = (int) round($size * 0.55);
-        $bandHeight = (int) round(($lines * $size * $lineHeight) + (2 * $padding));
+        do {
+            // Arabic advance width averages about half the em; this is what decides where ar-php breaks the lines.
+            $perLine = max(8, (int) floor($boxWidth / ($size * 0.52)));
+            $shaped = $this->shape($headline, $perLine);
+            $lines = substr_count($shaped, "\n") + 1;
+            $padding = (int) round($size * 0.55);
+            $bandHeight = (int) round(($lines * $size * $lineHeight) + (2 * $padding));
+            if ($bandHeight <= $maxBand || $size <= $minimum) {
+                break;
+            }
+            $size -= 2;
+        } while (true);
 
         $bottomSafe = (int) round($height * (float) ($template['safe_bottom'] ?? 0.1));
         $bandTop = max(0, $height - $bottomSafe - $bandHeight);

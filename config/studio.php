@@ -64,6 +64,10 @@ return [
         'max_chars' => 90,
         'min_font' => 22,
         'max_font' => 72,
+        // Arabic faces carry tall ascenders and deep descenders; 1.35 let Tajawal's lines touch.
+        'line_height' => 1.5,
+        // The band never takes more than this share of the frame; the type shrinks to fit before it does.
+        'max_band_ratio' => 0.38,
     ],
 
     'watermark' => [
