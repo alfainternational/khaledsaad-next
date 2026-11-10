@@ -173,7 +173,7 @@ class AssessmentEngine
         $scored = $this->score($audience, $answers);
         $rule = $this->rule($audience, $scored['level'], $scored['weakest']);
 
-        return AssessmentResult::query()->create([
+        $result = AssessmentResult::query()->create([
             'user_id' => $userId,
             'project_id' => $projectId,
             'audience' => $audience,
@@ -188,6 +188,14 @@ class AssessmentEngine
             'benchmark_group' => $this->benchmarkGroup($audience, $project),
             'session_token' => Str::random(48),
         ]);
+
+        // The closed loop (spec wave 2): a retake closes the oldest point that is due, and a fresh diagnosis opens
+        // its own three. Doing both here is what makes the loop self-starting instead of something to remember.
+        $loop = app(RemeasureLoop::class);
+        $loop->close($result);
+        $loop->schedule($result);
+
+        return $result;
     }
 
     public function prioritiesMarkdown(AssessmentResult $result): string

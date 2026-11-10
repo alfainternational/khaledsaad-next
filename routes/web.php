@@ -22,6 +22,7 @@ use App\Http\Controllers\App\OutputController;
 use App\Http\Controllers\App\ProjectController;
 use App\Http\Controllers\App\ToolRunController;
 use App\Http\Controllers\App\VisualStudioController;
+use App\Http\Controllers\App\WatchController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrController;
@@ -157,6 +158,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/app/tools/{tool}/read/{project}/apply', [BrandProfileController::class, 'apply'])->name('app.tools.read.apply');
     Route::post('/app/tools/{tool}/save', [OutputController::class, 'store'])->name('app.tools.save');
     // أصولي (§5.3) والمشاركة برابط (§4.7)
+    // مراقبة المنافسين (الموجة 2): الشاشة الوحيدة التي تجيب السؤال نفسه كل يوم لا مرة واحدة.
+    Route::get('/app/watch', [WatchController::class, 'index'])->name('app.watch');
+    Route::post('/app/watch', [WatchController::class, 'store'])->name('app.watch.store');
+    Route::post('/app/watch/{page}/check', [WatchController::class, 'check'])->middleware('throttle:ai')->name('app.watch.check');
+    Route::post('/app/watch/changes/{change}/seen', [WatchController::class, 'seen'])->name('app.watch.seen');
+    Route::delete('/app/watch/{page}', [WatchController::class, 'destroy'])->name('app.watch.destroy');
     Route::get('/app/outputs', [OutputController::class, 'index'])->name('app.outputs.index');
     Route::get('/app/outputs/{output}', [OutputController::class, 'show'])->name('app.outputs.show');
     Route::delete('/app/outputs/{output}', [OutputController::class, 'destroy'])->name('app.outputs.destroy');

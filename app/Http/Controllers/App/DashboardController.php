@@ -6,9 +6,11 @@ use App\Domain\Academy\Models\Course;
 use App\Domain\Academy\Models\LearningPath;
 use App\Domain\Academy\Models\Lesson;
 use App\Domain\Academy\Models\RealWorldCheckin;
+use App\Domain\Assessment\Models\AssessmentFollowup;
+use App\Domain\Assessment\Models\AssessmentResult;
+use App\Domain\Assessment\Services\RemeasureLoop;
 use App\Domain\Academy\Services\CertificateIssuer;
 use App\Domain\Academy\Services\ProgressService;
-use App\Domain\Assessment\Models\AssessmentResult;
 use App\Domain\Assessment\Services\Catalog;
 use App\Domain\Insights\Models\LearnerEvent;
 use App\Domain\Lab\Models\ToolOutput;
@@ -100,7 +102,22 @@ class DashboardController extends Controller
         $hasPaidPlan = $issuer->hasPaidPlan($user);
         $pendingCertificates = $courses->filter(fn ($c) => $c['progress'] && $c['progress']['is_complete'] && $issuer->pendingPlan($user, $c['course']))->map(fn ($c) => $c['course'])->values();
 
-        return view('app.progress', compact('program', 'courses', 'completed', 'certificates', 'realResults', 'hasPaidPlan', 'pendingCertificates'));
+        // الحلقة المغلقة (الموجة 2): التشخيص الأول مقابل آخر إعادة قياس، وما تحرّك بينهما بالبنود.
+        $loop = app(RemeasureLoop::class);
+        $baseline = AssessmentResult::query()->where('user_id', $user->id)->orderBy('id')->first();
+        $latest = AssessmentResult::query()->where('user_id', $user->id)->orderByDesc('id')->first();
+        $remeasure = null;
+        if ($baseline && $latest && $latest->id !== $baseline->id) {
+            $rows = $loop->delta($baseline, $latest);
+            $overallDelta = (int) $latest->overall - (int) $baseline->overall;
+            $remeasure = [
+                'baseline' => $baseline, 'latest' => $latest, 'rows' => $rows,
+                'overall_delta' => $overallDelta, 'verdict' => $loop->verdict($rows, $overallDelta),
+            ];
+        }
+        $nextPoint = AssessmentFollowup::query()->where('user_id', $user->id)->whereNull('completed_at')->orderBy('due_at')->first();
+
+        return view('app.progress', compact('program', 'courses', 'completed', 'certificates', 'realResults', 'hasPaidPlan', 'pendingCertificates', 'remeasure', 'nextPoint', 'baseline'));
     }
 
     private function suggestions(?AssessmentResult $assessment, $nextLesson): array

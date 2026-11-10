@@ -127,9 +127,12 @@ class LabAssetsTest extends TestCase
         foreach (LabCatalog::generators() as $slug => $definition) {
             $this->generateAndSave($slug, $definition['example_input']);
         }
-        $this->assertSame(10, ToolOutput::query()->where('user_id', $this->user->id)->count());
+        // Every generator saves an asset, but the PLAN is the ten chain assets alone: a side asset (the keyword plan)
+        // enriches the project without completing it, which is what LabCatalog::SIDE_ASSETS means.
+        $this->assertSame(count(LabCatalog::generators()), ToolOutput::query()->where('user_id', $this->user->id)->count());
         $assembly = PlanAssembly::query()->where('project_id', $this->project->id)->firstOrFail();
-        $this->assertCount(10, $assembly->outputs);
+        $this->assertCount(count(LabCatalog::CHAIN), $assembly->outputs);
+        $this->assertSame(10, count(LabCatalog::CHAIN));
         $this->assertNotNull($assembly->assembled_at);
 
         $this->actingAs($this->user)->get(route('app.projects.show', $this->project))->assertOk()->assertSee('خطة مشروعك تتجمّع')->assertSee('افتح الخطة المجمّعة')->assertSee('10 من 10 أصول');

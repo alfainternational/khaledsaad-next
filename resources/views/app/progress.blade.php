@@ -26,4 +26,52 @@
         </div>
     </aside>
 </div></section>
+<section class="section-tight" id="remeasure"><div class="shell">
+    <x-athar.kicker>الحلقة المغلقة</x-athar.kicker>
+    <h2 style="font-size:24px">هل تحرّك الرقم؟</h2>
+
+    @if($remeasure)
+        @php($d = $remeasure['overall_delta'])
+        <div class="card">
+            <div class="split">
+                <div>
+                    <p class="muted small" style="margin:0">{{ $remeasure['baseline']->created_at->format('Y/m/d') }} ← {{ $remeasure['latest']->created_at->format('Y/m/d') }}</p>
+                    <h3 style="font-size:28px;margin:4px 0">{{ $remeasure['baseline']->overall }} <span class="muted">←</span> {{ $remeasure['latest']->overall }}
+                        <span class="card-tag">{{ $d > 0 ? '+' : '' }}{{ $d }} نقطة</span>
+                    </h3>
+                </div>
+            </div>
+            <p style="margin:10px 0 14px"><b>القراءة:</b> {{ $remeasure['verdict'] }}</p>
+
+            <x-athar.table caption="حركة البنود بين التشخيصين">
+                <thead><tr><th>البند</th><th>كان</th><th>صار</th><th>الحركة</th></tr></thead>
+                <tbody>
+                    @foreach($remeasure['rows'] as $row)
+                    <tr data-dimension="{{ $row['key'] }}">
+                        <td>{{ $row['label'] }}@if($row['was_weakest']) <span class="card-tag">كانت الأولوية</span>@endif</td>
+                        <td>{{ $row['from'] }}</td>
+                        <td>{{ $row['to'] }}</td>
+                        <td class="{{ $row['delta'] > 0 ? 'diff-add' : ($row['delta'] < 0 ? 'diff-del' : 'muted') }}">{{ $row['delta'] > 0 ? '+' : '' }}{{ $row['delta'] }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </x-athar.table>
+        </div>
+    @elseif($baseline)
+        <div class="card placeholder-card">
+            <p class="muted" style="margin:0 0 8px">شخّصت مشروعك مرة واحدة ({{ $baseline->overall }}/100 في {{ $baseline->created_at->format('Y/m/d') }}). المقارنة تحتاج تشخيصاً ثانياً — والتشخيص وحده لا يحرّك رقماً، التنفيذ يفعل.</p>
+            <x-athar.button :href="route('assess.start')">أعد التشخيص</x-athar.button>
+        </div>
+    @else
+        <div class="card placeholder-card">
+            <p class="muted" style="margin:0 0 8px">لم تشخّص مشروعك بعد. التشخيص هو نقطة الصفر التي تُقاس عليها كل حركة لاحقة.</p>
+            <x-athar.button :href="route('assess.start')">ابدأ التشخيص</x-athar.button>
+        </div>
+    @endif
+
+    @if($nextPoint)
+        <p class="small muted" style="margin-top:10px">نقطة القياس التالية بعد {{ $nextPoint->days }} يوماً من تشخيصك: {{ $nextPoint->due_at->isPast() ? 'مستحقّة الآن' : $nextPoint->due_at->diffForHumans() }}.</p>
+    @endif
+</div></section>
+
 @endsection

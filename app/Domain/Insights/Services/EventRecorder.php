@@ -15,7 +15,7 @@ class EventRecorder
         'visit.home', 'visit.lesson', 'lesson.part_reached', 'lesson.opening_decided', 'lesson.final_decided', 'lesson.lab_generated', 'lesson.asset_enhanced',
         'lesson.whatif_used', 'asset.saved', 'asset.copied', 'asset.downloaded', 'question.answered', 'template.downloaded',
         'assessment.started', 'assessment.completed', 'checkin.committed', 'checkin.recorded', 'coach.asked', 'report.sent', 'lesson.completed',
-        'home.first_step', 'visit.tool', 'tool.generated', 'tool.enhanced', 'asset.shared', 'calculator.used', 'simulator.used', 'panel.used', 'studio.used', 'reader.used', 'reader.applied',
+        'home.first_step', 'visit.tool', 'tool.generated', 'tool.enhanced', 'asset.shared', 'calculator.used', 'simulator.used', 'panel.used', 'studio.used', 'reader.used', 'reader.applied', 'watch.added',
         'visit.article',
     ];
 

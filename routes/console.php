@@ -67,3 +67,7 @@ Schedule::command('platform:fetch-sources')->dailyAt('05:30')->withoutOverlappin
 Schedule::command('platform:evaluate-experiments')->hourly()->withoutOverlapping();
 // البند 2: الملفات التي لا يشير إليها أي أصل محفوظ تُحذف بعد 90 يوماً — الصورة رخيصة الإنتاج وغالية التكديس.
 Schedule::command('platform:prune-media')->dailyAt('03:40')->withoutOverlapping();
+// الموجة 2: مراقب الصفحات — مرة يومياً، ونافذة المعدل لكل مضيف تمنع إزعاج موقع واحد.
+Schedule::command('platform:check-watched-pages')->dailyAt('04:20')->withoutOverlapping();
+// الموجة 2: إعادة القياس — تذكير واحد لكل عضو عند أقدم نقطة مستحقّة، لا ثلاثة في صباح واحد.
+Schedule::command('platform:send-remeasure-reminders')->dailyAt('08:20')->withoutOverlapping();
