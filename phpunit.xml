@@ -18,6 +18,10 @@
         </include>
     </source>
     <php>
+        <!-- Peak across the full suite is ~100MB, but the CLI default of 256M still died late in a long run
+             (Premature end of PHP process, 2026-11-09). The headroom is what keeps the suite from failing for
+             a reason that has nothing to do with the code under test. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
