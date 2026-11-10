@@ -178,4 +178,21 @@ class OperationalFlowsTest extends TestCase
         // Other production-only requirements (https, async queue…) fail under the test config; this asserts the sitemap line alone.
         $this->artisan('platform:doctor --env=production')->expectsOutputToContain('[PASS] sitemap renderable');
     }
+
+    /**
+     * The object-storage line reports the `assets` disk, not the default one — the default is local by design, so
+     * asking about it warned forever on a host where the bucket was configured and working (deploy of 2026-11-10).
+     */
+    public function test_platform_doctor_reads_object_storage_from_the_assets_disk(): void
+    {
+        config(['filesystems.disks.assets' => ['driver' => 'local', 'root' => storage_path('app/assets')]]);
+        $this->artisan('platform:doctor --env=production')->expectsOutputToContain('[WARN] object storage');
+
+        config(['filesystems.disks.assets' => [
+            'driver' => 's3', 'bucket' => 'athar-assets', 'key' => 'k', 'secret' => 's', 'region' => 'auto',
+        ]]);
+        // The default disk stays local throughout, which is exactly the state the old check called "not configured".
+        $this->assertSame('local', config('filesystems.default'));
+        $this->artisan('platform:doctor --env=production')->expectsOutputToContain('[PASS] object storage');
+    }
 }

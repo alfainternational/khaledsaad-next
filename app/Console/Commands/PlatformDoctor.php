@@ -49,7 +49,14 @@ class PlatformDoctor extends Command
             $backupMarker = (string) config('platform.backup_marker');
             $checks['recent backup'] = $backupMarker !== '' && is_file($backupMarker) && filemtime($backupMarker) >= now()->subDay()->timestamp;
 
-            $warnings['object storage'] = ! in_array(config('filesystems.default'), ['local', 'public'], true);
+            // Measures the `assets` disk, not the default one. The default is local BY DESIGN (plan 2026-11-09 البند 2):
+            // sessions, cache and logs stay on the server so a bad bucket credential degrades one feature, not the
+            // platform. Asking about `filesystems.default` therefore warned forever on a correctly configured host.
+            $assets = (array) config('filesystems.disks.assets', []);
+            $warnings['object storage'] = ($assets['driver'] ?? 'local') === 's3'
+                && filled($assets['bucket'] ?? null)
+                && filled($assets['key'] ?? null)
+                && filled($assets['secret'] ?? null);
             $warnings['ai provider configured'] = app(\App\Domain\Lab\Services\AiGateway::class)->enabled();
             $warnings['paypal configured'] = filled(config('services.paypal.client_id')) && filled(config('services.paypal.secret')) && filled(config('services.paypal.webhook_id'));
             $warnings['paypal live mode'] = config('services.paypal.mode') === 'live';
