@@ -44,6 +44,7 @@ class LabController extends Controller
         return view('site.tools.index', [
             'generators' => $tools->where('kind', 'generator')->values(), 'calculators' => $tools->where('kind', 'calculator')->values(),
             'simulator' => $tools->firstWhere('kind', 'simulator'), 'panel' => $tools->firstWhere('kind', 'panel'),
+            'reader' => $tools->firstWhere('kind', 'reader'),
             'studio' => $tools->firstWhere('kind', 'studio'),
             'categories' => Tool::CATEGORIES, 'category' => in_array($category, Tool::CATEGORIES, true) ? $category : '',
         ]);
@@ -63,6 +64,9 @@ class LabController extends Controller
         }
         if ($tool->isStudio()) {
             return redirect()->route('tools.studio');
+        }
+        if ($tool->isReader()) {
+            return redirect()->route('tools.reader');
         }
         $user = $this->member($request);
         $projects = $user ? $this->projects($request) : collect();
@@ -226,6 +230,30 @@ class LabController extends Controller
             'tool' => $tool, 'fields' => $fields, 'result' => $result, 'member' => (bool) $user, 'projects' => $projects, 'project' => $project,
             'chain' => $this->chain->chain($tool, $project, $assets),
             'templates' => $studio->templates(), 'limits' => (array) config('studio.limits'), 'fontAvailable' => $studio->fontAvailable(),
+            'saved' => $user && $project ? ToolOutput::query()->where('project_id', $project->id)->where('output_type', $tool->output_type)->orderByDesc('version')->get() : collect(),
+        ]);
+    }
+
+    /**
+     * اقرأ موقعك — /tools/reader (spec 2026-11-09، الموجة 1). Public page, member-only run: the proposal lands on a
+     * project profile, so it needs a project to land on.
+     */
+    public function reader(Request $request)
+    {
+        $tool = Tool::query()->where('kind', 'reader')->where('is_published', true)->firstOrFail();
+        $user = $this->member($request);
+        $projects = $user ? $this->projects($request) : collect();
+        $project = $this->currentProject($request, $projects);
+        $result = session('lab.reader.'.$tool->slug);
+        $this->events->record($request, 'visit.tool', ['tool_id' => $tool->id]);
+
+        return view('site.tools.reader', [
+            'tool' => $tool, 'result' => $result, 'member' => (bool) $user, 'projects' => $projects, 'project' => $project,
+            'url' => $result['facts']['url'] ?? old('url', ''),
+            'sectors' => \App\Domain\Assessment\Services\Catalog::SECTORS,
+            'channels' => \App\Domain\Assessment\Services\Catalog::CHANNELS,
+            'aiEnabled' => app(AiGateway::class)->enabled(),
+            'profile' => $project?->profile ?? [],
             'saved' => $user && $project ? ToolOutput::query()->where('project_id', $project->id)->where('output_type', $tool->output_type)->orderByDesc('version')->get() : collect(),
         ]);
     }

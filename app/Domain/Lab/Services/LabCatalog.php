@@ -58,7 +58,7 @@ class LabCatalog
     }
 
     /** Assets a tool produces outside the ten-asset plan chain (they add to the project, they do not complete the plan). */
-    public const SIDE_ASSETS = ['market_panel' => 'لوحة السوق المحاكى', 'visual_assets' => 'أصول بصرية'];
+    public const SIDE_ASSETS = ['keyword_plan' => 'مخطط الكلمات المفتاحية', 'market_panel' => 'لوحة السوق المحاكى', 'visual_assets' => 'أصول بصرية', 'brand_profile' => 'ملف العلامة'];
 
     public static function label(string $type): string
     {
@@ -78,7 +78,8 @@ class LabCatalog
         }
         $tools[] = self::simulator() + ['slug' => 'ad-campaign-simulator', 'kind' => 'simulator', 'position' => $position++, 'is_published' => true, 'credit_cost' => 0, 'output_type' => null, 'feeds_from' => [], 'feeds_into' => [], 'quality_rules' => [], 'output_template' => null];
         $tools[] = self::panel() + ['slug' => 'market-panel', 'kind' => 'panel', 'position' => $position++, 'is_published' => true];
-        $tools[] = self::studio() + ['slug' => 'visual-studio', 'kind' => 'studio', 'position' => $position, 'is_published' => true];
+        $tools[] = self::studio() + ['slug' => 'visual-studio', 'kind' => 'studio', 'position' => $position++, 'is_published' => true];
+        $tools[] = self::reader() + ['slug' => 'brand-profile', 'kind' => 'reader', 'position' => $position, 'is_published' => true];
 
         return $tools;
     }
@@ -393,6 +394,12 @@ MD,
 ## الرابط الأساسي
 `{{utm_url}}`
 
+## رمز QR لهذا الرابط
+
+![رمز QR للرابط المتتبَّع]({{qr_url}})
+
+صيغة SVG: تكبر إلى لوحة إعلانية بلا تحبّب، وتُطبع حادّة على الفاتورة والملصق. وهو يحمل نفس وسوم UTM أعلاه، فالمسح من ملصق في المعرض يُحسب قناةً مثل أي نقرة — وهذا الفرق بين «حضرنا معرضاً» و«المعرض جلب 14 طلباً».
+
 ## ثلاث نسخ للاختبار (A/B/C)
 {{variants_table}}
 
@@ -439,6 +446,58 @@ MD,
 - **الخطر**: {{top_risk}}. **الحل**: {{top_fix}}
 
 _أُنشئت في مختبر أثر — {{date}}_
+MD,
+            ],
+
+            'keyword-planner' => [
+                'name' => 'مخطط الكلمات المفتاحية', 'category' => 'القياس', 'credit_cost' => 2, 'output_type' => 'keyword_plan', 'course_slug' => 'seo-content-marketing',
+                'description' => 'كلماتك الأساسية × الصيغ التي يكتبها الناس ← قائمة مرتّبة بالنيّة: ما يشتري الآن، وما يقارن، وما يقرأ فقط — ومعها الكلمات السالبة التي تحرق الميزانية.',
+                'tagline' => 'تُدخل: كلماتك الأساسية والصيغ → تخرج: تباديل مصنّفة بالنيّة وقائمة كلمات سالبة',
+                'feeds_from' => ['profile', 'customer_persona'], 'feeds_into' => ['content_angles', 'utm_links'],
+                'quality_rules' => ['required' => ['single_audience'], 'advisory' => ['risk_mitigation']],
+                'input_schema' => [
+                    self::f('heads', 'كلماتك الأساسية — سطر لكل كلمة', ['type' => 'textarea', 'source' => 'offer', 'placeholder' => "سيروم بشرة حساسة
+كريم بلا عطور
+عناية طبيعية", 'hint' => 'ما يسمّي به الناسُ ما تبيعه، لا ما تسمّيه أنت في فواتيرك.']),
+                    self::f('modifiers', 'الصيغ التي يكتبونها — سطر لكل صيغة', ['type' => 'textarea', 'placeholder' => "سعر
+أفضل
+تجربة
+كيف أختار", 'hint' => 'كلمات تسبق أو تلحق كلماتك: سعر، أفضل، تجربة، كيف…']),
+                    self::f('city', 'المدينة (للكلمات المحلية)', ['required' => false, 'source' => 'city', 'placeholder' => 'الرياض']),
+                    self::f('audience', 'الجمهور (شريحة واحدة)', ['source' => 'audience', 'from_asset' => ['type' => 'customer_persona', 'key' => 'audience'], 'placeholder' => 'نساء 25–40 ذوات بشرة حساسة']),
+                ],
+                'example_input' => ['heads' => "سيروم بشرة حساسة
+كريم بلا عطور", 'modifiers' => "سعر
+أفضل
+تجربة", 'city' => 'الرياض', 'audience' => 'نساء 25–40 ذوات بشرة حساسة'],
+                'output_template' => <<<'MD'
+# مخطط الكلمات المفتاحية — {{audience_short}}
+
+{{head_count}} كلمات أساسية × {{modifier_count}} صيغ ← **{{keyword_count}} كلمة مصنّفة**. المدينة: {{city_line}}.
+
+## القاعدة قبل القائمة
+النيّة تقرّر أين تُنفق، لا حجم البحث. من يكتب «سعر» قرّر تقريباً، ومن يكتب «كيف أختار» لم يقرّر بعد. الإنفاق على الثانية قبل الأولى هو أشيع تسريب للميزانية.
+
+## التوزيع بالنيّة
+
+{{intent_summary}}
+
+## الكلمات
+
+{{keyword_table}}
+
+## الكلمات السالبة — أضفها قبل أول ريال
+
+{{negatives}}
+
+هذه كلمات تجلب نقرات لم تكن ستشتري أصلاً. في حملة بحث تُضاف كـnegative keywords، وفي المحتوى تُتجنّب كزوايا.
+
+## الخطوة التالية
+- **ابدأ بالشرائية والمحلية فقط**، وأوقف الباقي حتى تعرف تكلفة الطلب.
+- **المعرفية ليست للإعلان**: حوّلها إلى [زوايا محتوى](/tools/content-angle-generator) تُقرأ مجاناً.
+- **اربط كل كلمة برابط UTM** من [بانِي UTM](/tools/utm-builder) وإلا لن تعرف أيّها جلب الطلب.
+
+_مختبر أثر — {{date}}_
 MD,
             ],
 
@@ -618,6 +677,57 @@ MD,
 - **المقاسات الطولية** تترك مساحة علوية وسفلية لواجهة المنصة نفسها؛ لا تضع فيها نصاً مهماً.
 
 _استوديو أثر — {{date}}_
+MD,
+        ];
+    }
+
+    /**
+     * قارئ موقعك (spec 2026-11-09 §5، الموجة 1): رابط ← ملف علامة يُقترح على ملف المشروع.
+     *
+     * It writes nowhere by itself. The nine generators all prefill from the PROJECT PROFILE, so proposing into that
+     * one hub feeds every one of them without touching nine input schemas — and the member reviews before it lands,
+     * because the profile is their own words and a crawl is not entitled to overwrite them.
+     */
+    public static function reader(): array
+    {
+        return [
+            'name' => 'اقرأ موقعك', 'category' => 'التخطيط', 'credit_cost' => 1, 'output_type' => 'brand_profile', 'course_slug' => 'marketing-foundations',
+            'description' => 'ضع رابط موقعك فيقرأه المختبر ويقترح ملف مشروعك: ما تبيعه، لمن، قطاعك، ما يميّزك، ودليلك — ثم تراجعه أنت قبل أن يُطبَّق.',
+            'tagline' => 'تُدخل: رابط صفحتك → تخرج: ملف علامة مقترح يعبّئ المولّدات التسعة',
+            'feeds_from' => [], 'feeds_into' => ['customer_persona', 'value_proposition', 'campaign_brief'],
+            'quality_rules' => [],
+            'input_schema' => [
+                self::f('url', 'رابط موقعك أو صفحة «من نحن»', ['placeholder' => 'https://example.com/about', 'hint' => 'صفحة فيها نصّ حقيقي عن نشاطك. الصفحة الرئيسية أحياناً تكون شعارات فقط.']),
+            ],
+            'example_input' => ['url' => 'https://example.com/about'],
+            'output_template' => <<<'MD'
+# ملف العلامة — {{brand}}
+
+مستخلَص من [{{host}}]({{url}}) بتاريخ {{date}}. **هذا استخلاص من صفحة واحدة، لا من نشاطك كله** — راجع كل سطر قبل اعتماده، فما لا تسنده الصفحة تُرك فارغاً عمداً بدل أن يُخترع.
+
+| الحقل | ما استُخلص |
+|---|---|
+| ما تبيعه | {{offer}} |
+| الجمهور | {{audience}} |
+| القطاع | {{sector_label}} |
+| ما يميّزك | {{differentiator}} |
+| الدليل | {{proof}} |
+| القناة الظاهرة | {{channel_label}} |
+
+## ملخّص النشاط
+
+{{summary}}
+
+## ما قالته الصفحة نفسها
+
+{{evidence}}
+
+## الخطوة التالية
+- **راجع الحقول الفارغة**: الفراغ يعني أن الصفحة لم تقل ذلك — وهو بذاته نتيجة: زائرك لم يقرأه أيضاً.
+- **طبّقه على ملف مشروعك** من الزر أعلاه، فتُعبَّأ المولّدات التسعة منه تلقائياً.
+- **ابدأ بـ[شخصية العميل](/tools/customer-persona)** فهي أول حلقة في السلسلة.
+
+_مختبر أثر — {{date}}_
 MD,
         ];
     }

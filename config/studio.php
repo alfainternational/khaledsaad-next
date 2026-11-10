@@ -24,7 +24,7 @@ return [
         'max_bytes' => (int) env('STUDIO_MAX_BYTES', 8 * 1024 * 1024),
         // 12MP ≈ 4240×2830: larger than any template needs, far below what would exhaust a shared-hosting process.
         'max_megapixels' => (float) env('STUDIO_MAX_MEGAPIXELS', 12),
-        'max_templates' => (int) env('STUDIO_MAX_TEMPLATES', 6),
+        'max_templates' => (int) env('STUDIO_MAX_TEMPLATES', 9),
         'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
         'quality' => (int) env('STUDIO_JPEG_QUALITY', 88),
     ],
@@ -51,6 +51,15 @@ return [
         'x_post' => ['label' => 'إكس — منشور', 'width' => 1200, 'height' => 675, 'safe_top' => 0.08, 'safe_bottom' => 0.08],
         'linkedin_post' => ['label' => 'لينكدإن — منشور', 'width' => 1200, 'height' => 627, 'safe_top' => 0.08, 'safe_bottom' => 0.08],
         'snapchat_ad' => ['label' => 'سناب — إعلان', 'width' => 1080, 'height' => 1920, 'safe_top' => 0.16, 'safe_bottom' => 0.18],
+
+        /*
+        | حزمة الهوية (الموجة 1، من #13 و#30). These are the same pipeline with one difference that matters:
+        | `fit => contain`. A logo cropped to a square is a logo with its edges cut off, so identity sizes pad
+        | onto a background instead of filling the frame. Cover is right for a photo and wrong for a mark.
+        */
+        'brand_avatar' => ['label' => 'الهوية — صورة الحساب', 'width' => 400, 'height' => 400, 'fit' => 'contain', 'background' => '#ffffff', 'safe_top' => 0.0, 'safe_bottom' => 0.0],
+        'app_icon' => ['label' => 'الهوية — أيقونة 512', 'width' => 512, 'height' => 512, 'fit' => 'contain', 'background' => '#ffffff', 'safe_top' => 0.0, 'safe_bottom' => 0.0],
+        'og_image' => ['label' => 'الهوية — صورة المشاركة (OG)', 'width' => 1200, 'height' => 630, 'fit' => 'contain', 'background' => '#ffffff', 'safe_top' => 0.08, 'safe_bottom' => 0.08],
     ],
 
     /*

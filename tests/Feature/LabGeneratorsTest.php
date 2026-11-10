@@ -20,7 +20,7 @@ class LabGeneratorsTest extends TestCase
         Http::fake();
     }
 
-    public function test_lab_index_lists_seventeen_working_tools_with_filters_and_no_coming_soon(): void
+    public function test_lab_index_lists_the_whole_catalogue_with_filters_and_no_coming_soon(): void
     {
         $page = $this->get('/tools')->assertOk()->assertSee('من السؤال إلى أصل قابل للاستخدام')->assertDontSee('قريباً');
         foreach (['الكل', 'التخطيط', 'الجمهور', 'المحتوى', 'الإعلانات', 'القياس', 'الذكاء الاصطناعي'] as $filter) {
@@ -37,8 +37,10 @@ class LabGeneratorsTest extends TestCase
         $page->assertSee(route('tools.panel'), false)->assertSee('بحساب ورصيد');
         // The studio is the opposite: it calls no model at all, so it costs nothing.
         $page->assertSee(route('tools.studio'), false)->assertSee('بلا توليد وبلا رصيد');
-        $this->assertSame(17, Tool::query()->where('is_published', true)->count());
-        $this->assertSame(10, Tool::query()->where('kind', 'generator')->where('is_published', true)->count());
+        // The reader proposes into the project profile that every generator prefills from, so it belongs on the index.
+        $page->assertSee(route('tools.reader'), false)->assertSee('يقترح ولا يكتب');
+        $this->assertSame(count(LabCatalog::tools()), Tool::query()->where('is_published', true)->count());
+        $this->assertSame(count(LabCatalog::generators()), Tool::query()->where('kind', 'generator')->where('is_published', true)->count());
     }
 
     public function test_every_generator_produces_a_base_asset_and_six_checks_for_a_visitor_without_ai(): void
@@ -57,7 +59,8 @@ class LabGeneratorsTest extends TestCase
             $this->assertSame(6, substr_count($page->getContent(), 'data-check="'), $slug);
         }
         Http::assertNothingSent();
-        $this->assertDatabaseCount('tool_runs', 30); // only the seeded illustrative examples: visitors create no runs
+        // Only the seeded illustrative examples — three example projects per generator; visitors create no runs.
+        $this->assertDatabaseCount('tool_runs', 3 * count(LabCatalog::generators()));
     }
 
     public function test_missing_required_fields_send_the_visitor_back_to_the_inputs(): void

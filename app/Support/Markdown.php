@@ -254,6 +254,7 @@ class Markdown
             'simulator' => route('tools.simulator'),
             'panel' => route('tools.panel'),
             'studio' => route('tools.studio'),
+            'reader' => route('tools.reader'),
             default => route('tools.show', $tool),
         };
     }

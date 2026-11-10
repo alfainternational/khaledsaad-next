@@ -104,7 +104,13 @@ class VisualStudio
         $out = [];
         foreach ($chosen as $key) {
             $template = $available[$key];
-            $image = $manager->read($source)->cover((int) $template['width'], (int) $template['height']);
+            $width = (int) $template['width'];
+            $height = (int) $template['height'];
+            // `contain` pads onto a background instead of cropping: a logo loses its meaning when its edges
+            // are cut off, while a product photo loses nothing by being filled to the frame.
+            $image = ($template['fit'] ?? 'cover') === 'contain'
+                ? $manager->read($source)->pad($width, $height, (string) ($template['background'] ?? '#ffffff'))
+                : $manager->read($source)->cover($width, $height);
 
             if ($headline !== '') {
                 $this->drawHeadline($image, $headline, $template);

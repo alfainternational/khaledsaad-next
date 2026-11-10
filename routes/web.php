@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\TaxonomyController;
 use App\Http\Controllers\Admin\ToolStudioController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\App\BillingController;
+use App\Http\Controllers\App\BrandProfileController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\LessonCompletionController;
 use App\Http\Controllers\App\MarketPanelController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\App\ToolRunController;
 use App\Http\Controllers\App\VisualStudioController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QrController;
 use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\Site\AcademyController;
 use App\Http\Controllers\Site\AssessController;
@@ -90,11 +92,14 @@ Route::get('/tools/calculators/{calc}', [LabController::class, 'calculator'])->n
 Route::get('/tools/simulator', [LabController::class, 'simulator'])->name('tools.simulator');
 Route::get('/tools/panel', [LabController::class, 'panel'])->name('tools.panel');
 Route::get('/tools/studio', [LabController::class, 'studio'])->name('tools.studio');
+Route::get('/tools/reader', [LabController::class, 'reader'])->name('tools.reader');
 Route::get('/tools/{tool}', [LabController::class, 'show'])->name('tools.show');
 Route::post('/tools/{tool}/generate', [LabController::class, 'generate'])->middleware('throttle:events')->name('tools.generate');
 Route::get('/a/{token}', [LabController::class, 'shared'])->name('assets.shared');
 // الملف المخزّن: الصف نفسه يقرّر من يقرأه — عضو في مساحة العمل، أو أي أحد إن كان أصله مشاركاً برابط.
 Route::get('/media/{media}', [MediaController::class, 'show'])->name('media.show');
+// رمز QR لرابط ولّدته المنصة نفسها: التوقيع يمنع أن يصير النطاق خدمة ترميز لروابط الآخرين.
+Route::get('/qr', [QrController::class, 'show'])->middleware('signed')->name('qr');
 Route::get('/resources', [ResourceController::class, 'index'])->name('resources');
 Route::view('/about', 'site.about')->name('about');
 Route::get('/pricing', [PageController::class, 'pricing'])->name('pricing');
@@ -148,6 +153,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/app/tools/{tool}/run', [ToolRunController::class, 'store'])->middleware('throttle:ai')->name('app.tools.run');
     Route::post('/app/tools/{tool}/panel', [MarketPanelController::class, 'store'])->middleware('throttle:ai')->name('app.tools.panel');
     Route::post('/app/tools/{tool}/studio', [VisualStudioController::class, 'store'])->middleware('throttle:ai')->name('app.tools.studio');
+    Route::post('/app/tools/{tool}/read', [BrandProfileController::class, 'store'])->middleware('throttle:ai')->name('app.tools.read');
+    Route::post('/app/tools/{tool}/read/{project}/apply', [BrandProfileController::class, 'apply'])->name('app.tools.read.apply');
     Route::post('/app/tools/{tool}/save', [OutputController::class, 'store'])->name('app.tools.save');
     // أصولي (§5.3) والمشاركة برابط (§4.7)
     Route::get('/app/outputs', [OutputController::class, 'index'])->name('app.outputs.index');

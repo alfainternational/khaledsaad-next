@@ -3,6 +3,7 @@
 namespace App\Domain\Lab\Services;
 
 use App\Domain\Assessment\Services\Catalog;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 /**
@@ -24,8 +25,95 @@ class Recipes
             'utm-builder' => $this->utm($values),
             'landing-page-reviewer' => $this->landingReview($values),
             'prompt-builder' => $this->prompts($values),
+            'keyword-planner' => $this->keywordPlanner($values),
             default => [],
         };
+    }
+
+    /**
+     * مخطط الكلمات المفتاحية (spec 2026-11-09، الموجة 1، من #15 advertools): تباديل × نيّة، كلها حساب لا توليد.
+     *
+     * The permutations are the easy half. The half that decides whether money is wasted is the INTENT split: a term
+     * someone types while comparing prices is not the term they type while deciding, and the negatives below are the
+     * words that make a campaign pay for curiosity. Every rule here is declared, so the page can show its own working.
+     */
+    private function keywordPlanner(array $v): array
+    {
+        $heads = $this->lines((string) ($v['heads'] ?? ''));
+        $modifiers = $this->lines((string) ($v['modifiers'] ?? ''));
+        $city = trim((string) ($v['city'] ?? ''));
+
+        // Intent buckets, by the words the searcher actually uses in Arabic and English.
+        $intents = [
+            'transactional' => ['اشترِ', 'شراء', 'سعر', 'أسعار', 'طلب', 'احجز', 'اشتراك', 'عرض', 'خصم', 'buy', 'price', 'order', 'book'],
+            'commercial' => ['أفضل', 'مقارنة', 'مراجعة', 'تقييم', 'بدائل', 'مقابل', 'best', 'review', 'compare', 'vs', 'alternative'],
+            'informational' => ['كيف', 'ما هو', 'طريقة', 'شرح', 'دليل', 'أسباب', 'how', 'what', 'guide', 'why'],
+            'local' => ['قريب', 'قريبة', 'في', 'بالقرب', 'near', 'في الرياض', 'جدة', 'الدمام'],
+        ];
+
+        $rows = [];
+        $counts = array_fill_keys([...array_keys($intents), 'other'], 0);
+        foreach ($heads as $head) {
+            foreach ($modifiers === [] ? [''] : $modifiers as $modifier) {
+                $term = trim($modifier === '' ? $head : $modifier.' '.$head);
+                $bucket = 'other';
+                foreach ($intents as $name => $words) {
+                    foreach ($words as $word) {
+                        if (mb_stripos($term, $word) !== false) {
+                            $bucket = $name;
+                            break 2;
+                        }
+                    }
+                }
+                $counts[$bucket] = ($counts[$bucket] ?? 0) + 1;
+                $rows[] = [$term, $bucket];
+                if ($city !== '' && $bucket !== 'local') {
+                    $rows[] = [trim($term.' '.$city), 'local'];
+                    $counts['local']++;
+                }
+            }
+        }
+        $rows = array_slice($rows, 0, 120);
+
+        $labels = ['transactional' => 'شرائية', 'commercial' => 'مقارنة', 'informational' => 'معرفية', 'local' => 'محلية', 'other' => 'غير مصنّفة'];
+        $priority = ['transactional' => 'ابدأ بها: أقرب نيّة للشراء', 'local' => 'ابدأ بها إن كان لك مكان أو نطاق خدمة', 'commercial' => 'المرحلة الثانية: من يقارن لم يقرّر بعد', 'informational' => 'للمحتوى لا للإعلان المدفوع', 'other' => 'راجعها يدوياً'];
+
+        $table = "| الكلمة | النيّة | ماذا تفعل بها |
+|---|---|---|
+";
+        foreach ($rows as [$term, $bucket]) {
+            $table .= '| '.$term.' | '.$labels[$bucket].' | '.$priority[$bucket]." |
+";
+        }
+
+        $summary = "| النيّة | العدد | القاعدة |
+|---|---|---|
+";
+        foreach ($labels as $key => $label) {
+            $summary .= '| '.$label.' | '.($counts[$key] ?? 0).' | '.$priority[$key]." |
+";
+        }
+
+        // Negatives are where budget leaks: these words bring clicks that were never going to buy.
+        $negatives = ['مجاني', 'مجانا', 'تحميل', 'وظائف', 'توظيف', 'راتب', 'بحث علمي', 'pdf', 'تورنت', 'كراك', 'free', 'download', 'jobs', 'salary', 'torrent', 'crack'];
+
+        return [
+            'keyword_table' => rtrim($table),
+            'intent_summary' => rtrim($summary),
+            'keyword_count' => count($rows),
+            'head_count' => count($heads),
+            'modifier_count' => count($modifiers),
+            'negatives' => implode('، ', $negatives),
+            'city_line' => $city !== '' ? $city : 'لم تُحدَّد مدينة، فلم تُضَف كلمات محلية',
+        ];
+    }
+
+    /** @return array<int, string> */
+    private function lines(string $value): array
+    {
+        $lines = array_map(fn ($l) => trim(preg_replace('/^[-•*\d.\s]+/u', '', (string) $l) ?? (string) $l), preg_split('/\R|،|,/u', $value) ?: []);
+
+        return array_values(array_unique(array_filter($lines, fn ($l) => mb_strlen($l) >= 2)));
     }
 
     private function persona(array $v): array
@@ -229,9 +317,13 @@ class Recipes
             $variants .= '| '.Str::upper($letter).' | '.$c.' | `'.$build($c)."` |\n";
         }
 
+        $tracked = $build($content);
+
         return [
             'utm_source' => $source, 'utm_medium' => $medium, 'utm_campaign' => $campaign, 'campaign_slug' => $campaign,
-            'utm_content_line' => $content !== '' ? $content : '(اختياري — يُملأ لكل إعلان)', 'utm_url' => $build($content), 'variants_table' => rtrim($variants),
+            'utm_content_line' => $content !== '' ? $content : '(اختياري — يُملأ لكل إعلان)', 'utm_url' => $tracked, 'variants_table' => rtrim($variants),
+            // A QR for the tracked link, signed so only links this platform generated can be rendered from our domain.
+            'qr_url' => URL::signedRoute('qr', ['u' => $tracked, 'size' => 420]),
         ];
     }
 
