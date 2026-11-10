@@ -56,6 +56,41 @@ class MarketPanelTest extends TestCase
         return ['success' => true, 'result' => ['response' => $text, 'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 5]]];
     }
 
+    /**
+     * The shape the live API actually returns for a voice: Workers AI hands back `result.response` ALREADY PARSED
+     * when the model answers with valid JSON — which is what every voice is asked for (verified 2026-11-10).
+     */
+    private static function voiceParsed(string $verdict, string $reason, string $objection = '', string $unlock = ''): array
+    {
+        return [
+            'success' => true,
+            'result' => [
+                'response' => compact('verdict', 'reason', 'objection', 'unlock'),
+                'choices' => [['message' => ['content' => json_encode(compact('verdict', 'reason', 'objection', 'unlock'), JSON_UNESCAPED_UNICODE)]]],
+                'usage' => ['prompt_tokens' => 265, 'completion_tokens' => 74],
+            ],
+        ];
+    }
+
+    public function test_a_voice_is_read_when_the_provider_returns_the_answer_already_parsed(): void
+    {
+        $user = $this->member();
+        Http::fake(['*api.cloudflare.com*' => Http::sequence()
+            ->push(self::voiceParsed('maybe', 'أريد دليلاً على بشرتي', 'لا أعرف إن كان مناسباً', 'عينة مجانية'))
+            ->push(self::voiceParsed('no', 'السعر مرتفع', 'السعر'))
+            ->push(['success' => true, 'result' => ['choices' => [['message' => ['content' => '{"verdict":"buy","reason":"واضح","objection":"","unlock":""}']]], 'usage' => ['prompt_tokens' => 9, 'completion_tokens' => 4]]])]);
+
+        $this->actingAs($user)->post(route('app.tools.panel', $this->tool), $this->payload($user))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $counts = session('lab.panel.market-panel')['counts'];
+        $this->assertSame(['buy' => 1, 'maybe' => 1, 'no' => 1, 'unclear' => 0], $counts, 'a parsed JSON answer must be read, not discarded as empty');
+        $this->assertStringContainsString('عينة مجانية', session('lab.panel.market-panel')['markdown']);
+        $this->assertSame(3, DB::table('ai_usages')->where('provider', 'cloudflare')->count());
+        $this->assertSame(265, (int) DB::table('ai_usages')->orderBy('id')->value('input_tokens'), 'usage is read from the same payload');
+    }
+
     private function member(int $credits = 40): User
     {
         $user = User::factory()->create(['audience' => 'owner']);
