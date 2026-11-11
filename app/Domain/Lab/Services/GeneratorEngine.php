@@ -3,6 +3,7 @@
 namespace App\Domain\Lab\Services;
 
 use App\Domain\Assessment\Services\Catalog;
+use App\Domain\Assessment\Services\ProjectPhrases;
 use App\Domain\Lab\Models\Tool;
 use App\Domain\Lab\Models\ToolVersion;
 use App\Support\Markdown;
@@ -105,6 +106,10 @@ class GeneratorEngine
                 $values[$key.'_label'] = $map[$input[$key]];
             }
         }
+        // The third value bag, and the third place that used to render «لا قناة ثابتة بعد» as if it named a channel.
+        // An asset a member prints and shows a client is the worst place for that sentence, so it reads from the
+        // same phrases the diagnosis and the lessons do.
+        $values += ProjectPhrases::all($input);
         $values['date'] = now()->format('Y/m/d');
 
         return $values;

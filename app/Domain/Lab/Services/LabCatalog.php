@@ -286,7 +286,7 @@ MD,
                 'output_template' => <<<'MD'
 # عناوين وCTA — {{offer}}
 
-لـ**{{audience}}** على {{channel_label}} · النتيجة: {{benefit}}
+لـ**{{audience}}** {{channel_phrase}} · النتيجة: {{benefit}}
 
 ## عشرة عناوين
 {{headlines_list}}

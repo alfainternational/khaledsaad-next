@@ -55,6 +55,14 @@ class PlatformDoctor extends Command
             $unready = \App\Domain\Content\Services\LegacyRedirects::brokenTargets();
             $warnings['legacy redirects reach their article'.($unready === [] ? '' : ' ('.count($unready).' waiting on review)')] = $unready === [];
 
+            // Two tools shipped in the code, were listed in the catalogue, and answered 404 in production because the
+            // seeder that adds them was frozen behind a marker. Nothing noticed. Now something does.
+            $absent = array_diff(
+                array_column(\App\Domain\Lab\Services\LabCatalog::tools(), 'slug'),
+                \App\Domain\Lab\Models\Tool::query()->pluck('slug')->all()
+            );
+            $warnings['every catalogue tool exists'.($absent === [] ? '' : ' (missing: '.implode(', ', $absent).')')] = $absent === [];
+
             // Measures the `assets` disk, not the default one. The default is local BY DESIGN (plan 2026-11-09 البند 2):
             // sessions, cache and logs stay on the server so a bad bucket credential degrades one feature, not the
             // platform. Asking about `filesystems.default` therefore warned forever on a correctly configured host.

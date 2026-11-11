@@ -60,7 +60,11 @@ class HomeAndAssessmentTest extends TestCase
             'budget' => 3000, 'channel' => 'instagram', 'goal' => 'leads', 'goal_number' => 60,
         ])->assertRedirect('/assess/questions');
 
-        $questions = $this->get('/assess/questions')->assertOk()->assertSee('ماذا تفعل الآن؟')->assertSee('3,000 ريال')->assertSee('إنستغرام');
+        // The stems are still written from the project — the budget and the offer are the member's own words back at
+        // them. The channel is deliberately NOT echoed any more: the only question that named it had to assume the
+        // member had one, and «لا قناة ثابتة بعد» is a valid answer (see AbsentValueCopyTest).
+        $questions = $this->get('/assess/questions')->assertOk()->assertSee('ماذا تفعل الآن؟')
+            ->assertSee('بميزانية 3,000 ريال')->assertSee('منتجات عناية طبيعية للنساء في الرياض');
         $ids = AssessmentQuestion::query()->where('audience', 'owner')->pluck('id');
         $this->assertCount(8, $ids);
         foreach ($ids as $id) {

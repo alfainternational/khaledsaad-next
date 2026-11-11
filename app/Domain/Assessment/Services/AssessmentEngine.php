@@ -37,7 +37,9 @@ class AssessmentEngine
     {
         $budget = (int) ($project['budget'] ?? 0);
 
-        return [
+        // The phrases carry their own preposition (see ProjectPhrases): a stem must never write «بميزانية {{budget}}»
+        // and hope the value is a number, because «بلا ميزانية إعلانية» is just as valid an answer as «3,000 ريال».
+        return ProjectPhrases::all($project) + [
             'offer' => Str::limit(trim((string) ($project['offer'] ?? '')), 60, '') ?: 'ما تبيعه',
             'budget' => $budget > 0 ? number_format($budget).' ريال' : 'بلا ميزانية إعلانية',
             'budget_number' => $budget,

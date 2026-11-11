@@ -108,11 +108,18 @@ if [ ! -f storage/app/.seeded-stage4-completion ]; then
     echo "==> Importing stage-4 completion rules (once)"
     "$PHP" artisan db:seed --class=StageFourCompletionSeeder --force --no-interaction && touch storage/app/.seeded-stage4-completion
 fi
-# Additive release: lab tools added after stage 2 (لوحة السوق المحاكى، استوديو الأصول البصرية). Never reruns
-# LabSeeder, which would overwrite templates the studio owns, and never touches a tool row that already exists.
-if [ ! -f storage/app/.seeded-lab-additions-20261110 ]; then
-    echo "==> Adding lab tools released after stage 2 (once)"
-    "$PHP" artisan db:seed --class=AdditiveToolsSeeder --force --no-interaction && touch storage/app/.seeded-lab-additions-20261110
+# Lab tools added after stage 2. This runs on EVERY deploy, with no marker, and that is the point: the seeder only
+# ever inserts a slug the database does not have, and never touches a row that exists, so there is nothing for a
+# marker to protect. Gating it behind one froze it — the tools released after the marker was first written
+# (keyword-planner, brand-profile) existed in the catalogue, were advertised by the code, and answered 404 in
+# production for a day, with nothing reporting it. A seeder that is safe to re-run should be re-run.
+echo "==> Adding any catalogue tool the database is missing"
+"$PHP" artisan db:seed --class=AdditiveToolsSeeder --force --no-interaction
+# Shipped copy that assumed a value the member had denied (channel «none», budget 0). Questions and lesson scenarios
+# are editor-owned, so their seeders stay marker-gated and this targeted, conflict-aware fix carries the correction.
+if [ ! -f storage/app/.seeded-sentinel-copy-20261111 ]; then
+    echo "==> Correcting copy that assumed a channel or a budget (once)"
+    "$PHP" artisan db:seed --class=SentinelCopyFixSeeder --force --no-interaction && touch storage/app/.seeded-sentinel-copy-20261111
 fi
 # Separate conflict-aware release: never rerun the broad magazine seeder to update editor-owned text.
 if [ ! -f storage/app/.seeded-editorial-reading-20261030 ]; then

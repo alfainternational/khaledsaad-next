@@ -4,6 +4,7 @@ namespace App\Domain\Academy\Services;
 
 use App\Domain\Academy\Models\Lesson;
 use App\Domain\Assessment\Services\Catalog;
+use App\Domain\Assessment\Services\ProjectPhrases;
 use App\Domain\Lab\Models\ToolOutput;
 use App\Domain\Lab\Services\GeneratorEngine;
 use App\Domain\Workspace\Models\Project;
@@ -32,8 +33,12 @@ class LessonComposer
         $values['goal_label'] = Catalog::label(Catalog::GOALS, $values['goal'] ?? null, 'هدف غير محدد');
         $values['sector_label'] = Catalog::label(Catalog::SECTORS, $values['sector'] ?? null, 'قطاع غير محدد');
         $values['budget_label'] = $values['budget'] > 0 ? number_format($values['budget']).' ريال' : 'بلا ميزانية إعلانية';
+        // Third person, because a scenario talks ABOUT the project; the diagnosis addresses the member and says «مدينتك».
+        $values['city'] = trim((string) ($values['city'] ?? '')) ?: 'مدينته';
 
-        return $values;
+        // Same phrases the diagnosis uses. Before this, each of the two built its own idea of how to say "none yet"
+        // and only one of them had one, so the same project read differently depending on which screen said it.
+        return ProjectPhrases::all($values) + $values;
     }
 
     public function scenarioSentence(Lesson $lesson, array $situation): string
