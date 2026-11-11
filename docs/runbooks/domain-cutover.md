@@ -16,6 +16,8 @@ cd ~/repositories/khaledsaad-next
 ```
 
 - المقالات تُستورد **مسودات** بنفس الـ slug العربي، وتُنشر من لوحة الإدارة بعد المراجعة. `--publish` ينشرها فوراً بتاريخها الأصلي.
+- **المسودة لا تُنتج 404.** التحويل القديم يُحسم وقت الطلب لا وقت الاستيراد: إن كانت المقالة منشورة فهو 301 إليها كما هو مسجّل، وإن لم تُراجَع بعد فهو **302 مؤقت** إلى قسمها (`/articles`، `/news`…). السبب أن 301 يُخزَّن للأبد، فلو وجّهناه للفهرس اليوم لظل يوجّه إليه بعد نشر المقالة. السجل في جدول `redirects` لا يتغيّر، فيعود 301 من تلقائه يوم النشر بلا هجرة بيانات. المنطق في `app/Domain/Content/Services/LegacyRedirects.php`.
+- `platform:doctor --env=production` يطبع `[WARN] legacy redirects reach their article (N waiting on review)` طالما بقيت مقالات بانتظار المراجعة — تحذير لا يمنع الانتقال، لكنه يعني أن N قارئاً يصل الفهرس لا ما نقر عليه.
 - خريطة الصفحات في [`docs/cutover/redirects.csv`](../cutover/redirects.csv) قابلة للتعديل؛ القرارات الحالية: الصفحات التعريفية → `/about`، القطاعات → `/academy`، التسعير → `/register`، تطبيق أندرويد → 410، الأدوات القديمة → أقرب أداة جديدة أو فهرس الأدوات.
 - التحويلات تعمل فوراً على next أيضاً، فيمكن اختبارها: `curl -I https://next.khaledsaad.net/blog`.
 
@@ -40,7 +42,7 @@ cd ~/repositories/khaledsaad-next
 4. **ملف البيئة**: `APP_URL=https://khaledsaad.net`، `PLATFORM_PUBLIC_HOST=khaledsaad.net`، `SESSION_DOMAIN=khaledsaad.net`، ثم `php artisan optimize:clear && php artisan optimize`.
 5. **PayPal**: تحديث عنوان الـ webhook إلى `https://khaledsaad.net/webhooks/paypal` وتحديث `PAYPAL_WEBHOOK_ID` إن تغيّر.
 6. **cron**: المسار لا يتغير (`~/repositories/khaledsaad-next`).
-7. **فحص فوري**: `/`، `/sitemap.xml`، `/blog` (يجب أن يحوّل)، تسجيل دخول، تشغيل أداة.
+7. **فحص فوري**: `/`، `/sitemap.xml`، `/blog` (يجب أن يحوّل)، تسجيل دخول، تشغيل أداة. وأحد روابط المدونة القديمة: `curl -I https://khaledsaad.net/blog/<slug>` — الجواب 301 إلى المقالة إن كانت منشورة، أو 302 إلى قسمها إن لم تُراجَع بعد. **أي 404 هنا خلل**، لا تأجيل مراجعة.
 8. بعد يومين من الاستقرار: تحويل `next.khaledsaad.net` بالكامل إلى الدومين الأساسي (Domains → Redirects، 301).
 
 ## المرحلة 3 — بعد الانتقال (72 ساعة)

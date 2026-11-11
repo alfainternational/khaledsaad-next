@@ -49,6 +49,12 @@ class PlatformDoctor extends Command
             $backupMarker = (string) config('platform.backup_marker');
             $checks['recent backup'] = $backupMarker !== '' && is_file($backupMarker) && filemtime($backupMarker) >= now()->subDay()->timestamp;
 
+            // Indexed legacy URLs whose article is still a draft. The middleware now serves them a temporary
+            // redirect to their section instead of a permanent one into a 404, so this is a WARN and not a FAIL:
+            // the site is safe to cut over, but twenty readers are landing on an index instead of what they clicked.
+            $unready = \App\Domain\Content\Services\LegacyRedirects::brokenTargets();
+            $warnings['legacy redirects reach their article'.($unready === [] ? '' : ' ('.count($unready).' waiting on review)')] = $unready === [];
+
             // Measures the `assets` disk, not the default one. The default is local BY DESIGN (plan 2026-11-09 البند 2):
             // sessions, cache and logs stay on the server so a bad bucket credential degrades one feature, not the
             // platform. Asking about `filesystems.default` therefore warned forever on a correctly configured host.

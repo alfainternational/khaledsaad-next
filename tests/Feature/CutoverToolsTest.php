@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Content\Models\ContentItem;
+use App\Domain\Content\Services\LegacyRedirects;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,6 +41,15 @@ class CutoverToolsTest extends TestCase
             $t->text('seo_description')->nullable();
             $t->timestamps();
         });
+    }
+
+    /** An unreviewed article exactly as platform:import-legacy leaves it: real row, draft status. */
+    private function draftItem(string $slug, string $type): ContentItem
+    {
+        return ContentItem::query()->create([
+            'title' => 'عنوان '.$slug, 'slug' => $slug, 'type' => $type, 'excerpt' => 'ملخص قصير',
+            'body' => "الفقرة الأولى.\n\nالفقرة الثانية.", 'author_name' => 'خالد سعد', 'status' => 'draft',
+        ]);
     }
 
     public function test_redirect_csv_import_upserts_and_rejects_bad_rows(): void
@@ -112,8 +122,9 @@ class CutoverToolsTest extends TestCase
         $this->assertDatabaseCount('content_items', 1);
         $this->assertDatabaseHas('redirects', ['from_path' => '/blog/صوتك-في-السوق', 'to_path' => '/articles/صوتك-في-السوق', 'status_code' => 301]);
 
-        // Encoded legacy URL hits the decoded redirect row.
-        $this->get('/blog/'.rawurlencode('صوتك-في-السوق'))->assertRedirect('/articles/صوتك-في-السوق');
+        // Encoded legacy URL hits the decoded redirect row. The article is still a draft, so the member is sent to
+        // its section — temporarily, so nothing caches a destination the editor is about to change.
+        $this->get('/blog/'.rawurlencode('صوتك-في-السوق'))->assertStatus(302)->assertRedirect('/articles');
 
         // Re-running updates in place and never republishes/downgrades an editor's decision.
         $item->update(['status' => 'published', 'published_at' => now()]);
@@ -136,5 +147,58 @@ class CutoverToolsTest extends TestCase
         $this->assertSame('published', $item->status);
         $this->assertSame('2024-06-01', $item->published_at->toDateString());
         $this->get('/articles/old-post')->assertOk()->assertSee('قديم');
+    }
+
+    /**
+     * The cutover blocker found on 2026-11-11: twenty indexed /blog/{slug} URLs carried a 301 to articles that the
+     * legacy import deliberately left as drafts, so cutover day would have answered them with a permanent redirect
+     * into a 404. The destination is now decided when the request arrives, not when the row was written.
+     */
+    public function test_a_redirect_to_an_unpublished_article_lands_on_its_section_until_it_goes_live(): void
+    {
+        $this->seed();
+        $draft = $this->draftItem('weekly-change', 'news');
+        DB::table('redirects')->insert([
+            ['from_path' => '/blog/weekly-change', 'to_path' => '/articles/weekly-change', 'status_code' => 301, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['from_path' => '/blog/vanished', 'to_path' => '/articles/vanished', 'status_code' => 301, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // A draft goes to the shelf it will appear on, temporarily: a 301 here would outlive the draft in every
+        // cache that saw it, and keep sending readers to the index long after the article was published.
+        $fallback = $this->get('/blog/weekly-change')->assertStatus(302)->assertRedirect('/news');
+        // Nothing may cache a destination the editor can change this afternoon — not even heuristically.
+        $this->assertStringContainsString('no-store', $fallback->headers->get('Cache-Control', ''));
+        // An article that no longer exists at all has no shelf of its own; the magazine index is the honest answer.
+        $this->get('/blog/vanished')->assertStatus(302)->assertRedirect('/articles');
+
+        // The row is untouched: it still records what the editor meant to happen.
+        $this->assertDatabaseHas('redirects', ['from_path' => '/blog/weekly-change', 'to_path' => '/articles/weekly-change', 'status_code' => 301]);
+        $this->assertSame(['/blog/weekly-change' => 'weekly-change', '/blog/vanished' => 'vanished'], LegacyRedirects::brokenTargets());
+        $this->artisan('platform:doctor --env=production')->expectsOutputToContain('[WARN] legacy redirects reach their article (2 waiting on review)');
+
+        // Publishing is the only thing that has to happen, and nothing has to be re-imported or re-pointed.
+        $draft->update(['status' => 'published', 'published_at' => now()->subMinute()]);
+
+        $this->get('/blog/weekly-change')->assertStatus(301)->assertRedirect('/articles/weekly-change');
+        $this->assertSame(['/blog/vanished' => 'vanished'], LegacyRedirects::brokenTargets());
+    }
+
+    public function test_the_fallback_serves_the_section_instead_of_looping_on_it(): void
+    {
+        $this->seed();
+        $this->draftItem('not-yet', 'article');
+        DB::table('redirects')->insert([
+            // A section index pointed into one of its own unready articles: resolving it yields the path that was
+            // asked for. Aborting 500 on that would take the magazine down to avoid a redirect loop.
+            ['from_path' => '/articles', 'to_path' => '/articles/not-yet', 'status_code' => 301, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            // Targets outside /articles/{slug} are not second-guessed at all.
+            ['from_path' => '/knowledge', 'to_path' => '/articles', 'status_code' => 301, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->get('/articles')->assertOk();
+        $this->get('/knowledge')->assertStatus(301)->assertRedirect('/articles');
+        // An inactive row is still invisible, and a 410 still means gone rather than "look on the shelf".
+        DB::table('redirects')->where('from_path', '/knowledge')->update(['status_code' => 410]);
+        $this->get('/knowledge')->assertStatus(410);
     }
 }
