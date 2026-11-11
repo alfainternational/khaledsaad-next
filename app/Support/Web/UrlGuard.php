@@ -3,6 +3,7 @@
 namespace App\Support\Web;
 
 use DomainException;
+use RuntimeException;
 
 /**
  * ما الذي يُسمح للخادم بجلبه (spec 2026-11-09، الموجة 0 البند 3).
@@ -104,6 +105,13 @@ class UrlGuard
             }
 
             return $stubbed;
+        }
+
+        // A test that reaches real DNS is a bug, not a slow test. It depends on the network, takes seconds, and when
+        // the lookup hiccups this throws «تعذّر العثور على هذا النطاق» — so the test fails once, passes the next two
+        // times, and gets written off as noise. Refusing loudly turns that into a failure with a name on it.
+        if (app()->runningUnitTests()) {
+            throw new RuntimeException("UrlGuard tried to resolve «{$host}» over real DNS. Stub it in the test: UrlGuard::resolveUsing(fn () => ['93.184.216.34']);");
         }
 
         $records = @dns_get_record($host, DNS_A + DNS_AAAA) ?: [];
