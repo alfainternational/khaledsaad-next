@@ -118,7 +118,14 @@ fi
 [ -d "$DOCROOT" ] || fail "$DOCROOT is missing or is not a directory. Nothing to move aside."
 
 cd "$APP_DIR"
-[ -z "$(git status --porcelain)" ] || fail "The checkout has local changes. Deploy cleanly first (the bootstrap resets to origin/$BRANCH)."
+# Tracked files only. A deployed checkout always carries untracked runtime leftovers — a storage symlink, a cache
+# file, a marker — and refusing to move the domain because of one of those is a guard that cries wolf. What matters
+# is that the code being served is the code that was reviewed, which is this check plus the HEAD comparison below.
+dirty="$(git status --porcelain --untracked-files=no)"
+if [ -n "$dirty" ]; then
+    printf '%s\n' "$dirty" | sed 's/^/        /'
+    fail "The files above differ from the commit. A guard that will not say what it found is not worth obeying, so there they are: restore them (git -C $APP_DIR checkout -- <path>) or re-run the bootstrap, which resets to origin/$BRANCH."
+fi
 git fetch --depth=1 origin "$BRANCH" --quiet
 local_head="$(git rev-parse HEAD)"
 remote_head="$(git rev-parse "origin/$BRANCH")"
